@@ -18,26 +18,26 @@ A JIT in OCaml for Scilab (part of the Richelieu FUI project)
 
 - Now, build and install:
 
-    ./configure --enable-maintainer-mode  --prefix MY_SCILAB_PREFIX
-    make
-    make install
+        ./configure --enable-maintainer-mode  --prefix MY_SCILAB_PREFIX
+        make
+        make install
 
 - You might need some env variables to run:
 
-    PATH=MY_SCILAB_PREFIX/bin:$PATH
-    LD_LIBRARY_PATH=MY_SCILAB_PREFIX/lib/scilab:$LD_LIBRARY_PATH
-    LD_RUN_PATH=MY_SCILAB_PREFIX/lib/scilab:$LD_RUN_PATH
-    export PATH
-    export LD_LIBRARY_PATH
-    export LD_RUN_PATH
+        PATH=MY_SCILAB_PREFIX/bin:$PATH
+        LD_LIBRARY_PATH=MY_SCILAB_PREFIX/lib/scilab:$LD_LIBRARY_PATH
+        LD_RUN_PATH=MY_SCILAB_PREFIX/lib/scilab:$LD_RUN_PATH
+        export PATH
+        export LD_LIBRARY_PATH
+        export LD_RUN_PATH
 
 - Now, you can test it:
 
-    scilab
+        scilab
 
   or
 
-    scilab-cli
+        scilab-cli
 
 ## How to modify
 
