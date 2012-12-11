@@ -10,13 +10,14 @@
  *
  */
 
-#ifndef __JIT_OCAML_HH__
-#define __JIT_OCAML_HH__
+#include "jit_ocaml.hxx"
 
-#include "ast.hxx"
-#include "exp.hxx"
+extern ast::Exp* ast_saved;
 
-extern char* scicaml_ast2string(ast::Exp*);
-extern ast::Exp* scicaml_string2ast(char*);
-
-#endif /* __JIT_OCAML_HH__ */
+ast::Exp* scicaml_string2ast(char *buf)
+{
+  std::cerr << "scicaml_string2ast" << std::endl;
+  ast::Exp* ast = ast_saved;
+  ast_saved = NULL;
+  return ast;
+}

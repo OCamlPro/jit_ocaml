@@ -10,15 +10,10 @@
  *
  */
 
-#ifndef AST_RUNVISITOR_HXX
-#define AST_RUNVISITOR_HXX
+#ifndef __JIT_OCAML_H__
+#define __JIT_OCAML_H__
 
-#include "jit_ocaml.hxx"
+extern char* jit_ocaml_analyze(char*);
 
-ast::Exp* jit_ocaml(ast::Exp* ast0)
-{
-  std::cerr << "jit_ocaml !!!" << std::endl;
-  return ast0;
-}
+#endif
 
-#endif // !AST_RUNVISITOR_HXX

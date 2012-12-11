@@ -28,8 +28,11 @@ include $(top_srcdir)/Makefile.incl.am
 
 
 JIT_OCAML_CPP_SOURCES = \
-			src/cpp/serialize_visitor.cpp \
-			src/cpp/jit_ocaml.cpp
+			src/cpp/scicaml_ast2string.cpp \
+			src/cpp/scicaml_string2ast.cpp
+
+#JIT_OCAML_C_SOURCES = \
+#			src/c/jit_callback.c
 
 libscijit_ocaml_la_CFLAGS = -I$(srcdir)/includes
 
@@ -56,14 +59,23 @@ libscijit_ocaml_la_CPPFLAGS = \
 	$(AM_CPPFLAGS)
 
 pkglib_LTLIBRARIES = libscijit_ocaml.la
-BUILT_SOURCES = libscijit_ocaml-runtime.a
-
-libscijit_ocaml_la_LIBADD= libscijit_ocaml-runtime.a
+#BUILT_SOURCES = libscijit_ocaml-runtime.a
+#
+libscijit_ocaml_la_LIBADD= libscijit_ocaml-runtime.o
 libscijit_ocaml_la_SOURCES = $(JIT_OCAML_CPP_SOURCES)
 OCAMLC_WHERE := `ocamlc -where`
 
-libscijit_ocaml-runtime.a:
+jit_ocaml.o: src/c/jit_ocaml.c
+	ocamlopt -c -I includes -fPIC src/c/jit_ocaml.c
+
+OCAML_SRCS = \
+	src/ocaml/scilabAst.ml
+
+libscijit_ocaml-runtime.o: $(OCAML_SRCS) jit_ocaml.o libasmrun.a
 	ocamlopt -c -fPIC src/ocaml/scilabAst.ml
 	ocamlopt -o libscijit_ocaml-runtime.o -output-obj src/ocaml/scilabAst.cmx
-	ar rc libscijit_ocaml-runtime.a libscijit_ocaml-runtime.o  $(OCAMLC_WHERE)/libasmrun.a
+
+libasmrun.a:
+	cp $(OCAMLC_WHERE)/libasmrun.a .
+
 

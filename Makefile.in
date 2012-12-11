@@ -122,9 +122,9 @@ am__installdirs = "$(DESTDIR)$(pkglibdir)" \
 	"$(DESTDIR)$(libscijit_ocaml_la_etcdir)" \
 	"$(DESTDIR)$(libscijit_ocaml_la_rootdir)"
 LTLIBRARIES = $(pkglib_LTLIBRARIES)
-libscijit_ocaml_la_DEPENDENCIES = libscijit_ocaml-runtime.a
-am__objects_1 = libscijit_ocaml_la-serialize_visitor.lo \
-	libscijit_ocaml_la-jit_ocaml.lo
+libscijit_ocaml_la_DEPENDENCIES = libscijit_ocaml-runtime.o
+am__objects_1 = libscijit_ocaml_la-scicaml_ast2string.lo \
+	libscijit_ocaml_la-scicaml_string2ast.lo
 am_libscijit_ocaml_la_OBJECTS = $(am__objects_1)
 libscijit_ocaml_la_OBJECTS = $(am_libscijit_ocaml_la_OBJECTS)
 DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir)/modules/core/includes
@@ -493,9 +493,12 @@ HELP_CHAPTERDIR = help/
 HELP_CHAPTERFILE = addchapter.sce
 HELP_CHAPTERLANG = en_US fr_FR pt_BR
 JIT_OCAML_CPP_SOURCES = \
-			src/cpp/serialize_visitor.cpp \
-			src/cpp/jit_ocaml.cpp
+			src/cpp/scicaml_ast2string.cpp \
+			src/cpp/scicaml_string2ast.cpp
 
+
+#JIT_OCAML_C_SOURCES = \
+#			src/c/jit_callback.c
 libscijit_ocaml_la_CFLAGS = -I$(srcdir)/includes
 libscijit_ocaml_la_CPPFLAGS = \
 	-I$(srcdir)/includes \
@@ -520,12 +523,15 @@ libscijit_ocaml_la_CPPFLAGS = \
 	$(AM_CPPFLAGS)
 
 pkglib_LTLIBRARIES = libscijit_ocaml.la
-BUILT_SOURCES = libscijit_ocaml-runtime.a
-libscijit_ocaml_la_LIBADD = libscijit_ocaml-runtime.a
+#BUILT_SOURCES = libscijit_ocaml-runtime.a
+#
+libscijit_ocaml_la_LIBADD = libscijit_ocaml-runtime.o
 libscijit_ocaml_la_SOURCES = $(JIT_OCAML_CPP_SOURCES)
 OCAMLC_WHERE := `ocamlc -where`
-all: $(BUILT_SOURCES)
-	$(MAKE) $(AM_MAKEFLAGS) all-am
+OCAML_SRCS = \
+	src/ocaml/scilabAst.ml
+
+all: all-am
 
 .SUFFIXES:
 .SUFFIXES: .sci .bin .cpp .lo .o .obj
@@ -600,8 +606,8 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libscijit_ocaml_la-jit_ocaml.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libscijit_ocaml_la-serialize_visitor.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libscijit_ocaml_la-scicaml_ast2string.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libscijit_ocaml_la-scicaml_string2ast.Plo@am__quote@
 
 .cpp.o:
 @am__fastdepCXX_TRUE@	$(CXXCOMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<
@@ -624,19 +630,19 @@ distclean-compile:
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(LTCXXCOMPILE) -c -o $@ $<
 
-libscijit_ocaml_la-serialize_visitor.lo: src/cpp/serialize_visitor.cpp
-@am__fastdepCXX_TRUE@	$(LIBTOOL)  --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libscijit_ocaml_la_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT libscijit_ocaml_la-serialize_visitor.lo -MD -MP -MF $(DEPDIR)/libscijit_ocaml_la-serialize_visitor.Tpo -c -o libscijit_ocaml_la-serialize_visitor.lo `test -f 'src/cpp/serialize_visitor.cpp' || echo '$(srcdir)/'`src/cpp/serialize_visitor.cpp
-@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/libscijit_ocaml_la-serialize_visitor.Tpo $(DEPDIR)/libscijit_ocaml_la-serialize_visitor.Plo
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='src/cpp/serialize_visitor.cpp' object='libscijit_ocaml_la-serialize_visitor.lo' libtool=yes @AMDEPBACKSLASH@
+libscijit_ocaml_la-scicaml_ast2string.lo: src/cpp/scicaml_ast2string.cpp
+@am__fastdepCXX_TRUE@	$(LIBTOOL)  --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libscijit_ocaml_la_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT libscijit_ocaml_la-scicaml_ast2string.lo -MD -MP -MF $(DEPDIR)/libscijit_ocaml_la-scicaml_ast2string.Tpo -c -o libscijit_ocaml_la-scicaml_ast2string.lo `test -f 'src/cpp/scicaml_ast2string.cpp' || echo '$(srcdir)/'`src/cpp/scicaml_ast2string.cpp
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/libscijit_ocaml_la-scicaml_ast2string.Tpo $(DEPDIR)/libscijit_ocaml_la-scicaml_ast2string.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='src/cpp/scicaml_ast2string.cpp' object='libscijit_ocaml_la-scicaml_ast2string.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(LIBTOOL)  --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libscijit_ocaml_la_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o libscijit_ocaml_la-serialize_visitor.lo `test -f 'src/cpp/serialize_visitor.cpp' || echo '$(srcdir)/'`src/cpp/serialize_visitor.cpp
+@am__fastdepCXX_FALSE@	$(LIBTOOL)  --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libscijit_ocaml_la_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o libscijit_ocaml_la-scicaml_ast2string.lo `test -f 'src/cpp/scicaml_ast2string.cpp' || echo '$(srcdir)/'`src/cpp/scicaml_ast2string.cpp
 
-libscijit_ocaml_la-jit_ocaml.lo: src/cpp/jit_ocaml.cpp
-@am__fastdepCXX_TRUE@	$(LIBTOOL)  --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libscijit_ocaml_la_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT libscijit_ocaml_la-jit_ocaml.lo -MD -MP -MF $(DEPDIR)/libscijit_ocaml_la-jit_ocaml.Tpo -c -o libscijit_ocaml_la-jit_ocaml.lo `test -f 'src/cpp/jit_ocaml.cpp' || echo '$(srcdir)/'`src/cpp/jit_ocaml.cpp
-@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/libscijit_ocaml_la-jit_ocaml.Tpo $(DEPDIR)/libscijit_ocaml_la-jit_ocaml.Plo
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='src/cpp/jit_ocaml.cpp' object='libscijit_ocaml_la-jit_ocaml.lo' libtool=yes @AMDEPBACKSLASH@
+libscijit_ocaml_la-scicaml_string2ast.lo: src/cpp/scicaml_string2ast.cpp
+@am__fastdepCXX_TRUE@	$(LIBTOOL)  --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libscijit_ocaml_la_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT libscijit_ocaml_la-scicaml_string2ast.lo -MD -MP -MF $(DEPDIR)/libscijit_ocaml_la-scicaml_string2ast.Tpo -c -o libscijit_ocaml_la-scicaml_string2ast.lo `test -f 'src/cpp/scicaml_string2ast.cpp' || echo '$(srcdir)/'`src/cpp/scicaml_string2ast.cpp
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/libscijit_ocaml_la-scicaml_string2ast.Tpo $(DEPDIR)/libscijit_ocaml_la-scicaml_string2ast.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='src/cpp/scicaml_string2ast.cpp' object='libscijit_ocaml_la-scicaml_string2ast.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(LIBTOOL)  --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libscijit_ocaml_la_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o libscijit_ocaml_la-jit_ocaml.lo `test -f 'src/cpp/jit_ocaml.cpp' || echo '$(srcdir)/'`src/cpp/jit_ocaml.cpp
+@am__fastdepCXX_FALSE@	$(LIBTOOL)  --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libscijit_ocaml_la_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o libscijit_ocaml_la-scicaml_string2ast.lo `test -f 'src/cpp/scicaml_string2ast.cpp' || echo '$(srcdir)/'`src/cpp/scicaml_string2ast.cpp
 
 mostlyclean-libtool:
 	-rm -f *.lo
@@ -764,15 +770,13 @@ distdir: $(DISTFILES)
 	done
 check-am: all-am
 	$(MAKE) $(AM_MAKEFLAGS) check-local
-check: $(BUILT_SOURCES)
-	$(MAKE) $(AM_MAKEFLAGS) check-am
+check: check-am
 all-am: Makefile $(LTLIBRARIES) $(DATA) all-local
 installdirs:
 	for dir in "$(DESTDIR)$(pkglibdir)" "$(DESTDIR)$(libscijit_ocaml_la_etcdir)" "$(DESTDIR)$(libscijit_ocaml_la_rootdir)"; do \
 	  test -z "$$dir" || $(MKDIR_P) "$$dir"; \
 	done
-install: $(BUILT_SOURCES)
-	$(MAKE) $(AM_MAKEFLAGS) install-am
+install: install-am
 install-exec: install-exec-am
 install-data: install-data-am
 uninstall: uninstall-am
@@ -802,7 +806,6 @@ distclean-generic:
 maintainer-clean-generic:
 	@echo "This command is intended for maintainers to use"
 	@echo "it deletes files that may require special tools to rebuild."
-	-test -z "$(BUILT_SOURCES)" || rm -f $(BUILT_SOURCES)
 clean: clean-am
 
 clean-am: clean-generic clean-libtool clean-local \
@@ -877,7 +880,7 @@ uninstall-am: uninstall-libscijit_ocaml_la_etcDATA \
 	uninstall-libscijit_ocaml_la_rootDATA \
 	uninstall-pkglibLTLIBRARIES
 
-.MAKE: all check check-am install install-am install-strip
+.MAKE: check-am install-am install-strip
 
 .PHONY: CTAGS GTAGS all all-am all-local check check-am check-local \
 	clean clean-generic clean-libtool clean-local \
@@ -1105,10 +1108,15 @@ distclean-local:
 
 .PHONY: macros java swig giws
 
-libscijit_ocaml-runtime.a:
+jit_ocaml.o: src/c/jit_ocaml.c
+	ocamlopt -c -I includes -fPIC src/c/jit_ocaml.c
+
+libscijit_ocaml-runtime.o: $(OCAML_SRCS) jit_ocaml.o libasmrun.a
 	ocamlopt -c -fPIC src/ocaml/scilabAst.ml
 	ocamlopt -o libscijit_ocaml-runtime.o -output-obj src/ocaml/scilabAst.cmx
-	ar rc libscijit_ocaml-runtime.a libscijit_ocaml-runtime.o  $(OCAMLC_WHERE)/libasmrun.a
+
+libasmrun.a:
+	cp $(OCAMLC_WHERE)/libasmrun.a .
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.
