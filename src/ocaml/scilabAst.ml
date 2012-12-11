@@ -30,15 +30,15 @@ module Symbol = struct
 end
 
 module BigBool = struct
-  type t = bool (* what is a BigBool ? *)
+  type t = unit (* what is a BigBool ? *)
 end
 
 module BigDouble = struct
-  type t = float (* what is a BigDouble ? *)
+  type t = unit (* what is a BigDouble ? *)
 end
 
 module BigString = struct
-  type t = string (* what is a BigString ? *)
+  type t = unit (* what is a BigString ? *)
 end
 
 type ast =
@@ -402,86 +402,3 @@ in run_MatrixExp.hxx
 in run_CallExp.hxx
     void visitprivate(const CallExp &e)
 *)
-
-let _ =
-  Printf.fprintf stderr "HELLO !\n%!"
-
-external jit_ocaml_register_callback_ml :
-  (string -> string) -> unit = "jit_ocaml_register_callback_c"
-
-let get_uint8 s pos =
-  int_of_char (String.unsafe_get s pos), pos+1
-
-let get_bool s pos =
-  let n, pos = get_uint8 s pos in
-  (n <> 0), pos
-
-let get_uint32 s pos =
-  let c0, pos = get_uint8 s pos in
-  let c1, pos = get_uint8 s pos in
-  let c2, pos = get_uint8 s pos in
-  let c3, pos = get_uint8 s pos in
-  c0 + ((c1 + ((c2 + (c3 lsl 8)) lsl 8)) lsl 8), pos
-
-let get_ast s pos =
-  let code, pos = get_uint8 s pos in
-  let first_line, pos = get_uint32 s pos in
-  let first_column, pos = get_uint32 s pos in
-  let last_line, pos = get_uint32 s pos in
-  let last_column, pos = get_uint32 s pos in
-  let is_verbose, pos = get_bool s pos in
-  let is_break, pos = get_bool s pos in
-  let is_breakable, pos = get_bool s pos in
-  let is_return, pos = get_bool s pos in
-  let is_returnable, pos = get_bool s pos in
-  let is_continue, pos = get_bool s pos in
-  let is_continuable, pos = get_bool s pos in
-
-  let loc = {
-    first_line; first_column; last_line; last_column
-  } in
-  let exp_info = {
-    is_verbose;
-    is_break; is_breakable;
-    is_return; is_returnable;
-    is_continue; is_continuable;
-  } in
-  code, exp_info, loc, pos
-
-let mkexp exp_desc exp_info exp_location =
-  { exp_desc; exp_location; exp_info }
-
-let rec ast_of_buffer s pos =
-  let code, info, loc, pos = get_ast s pos in
-  match code with
-  | 1 ->
-    let nitems, pos = get_uint32 s pos in
-    let rec iter nitems s pos ritems =
-      if nitems > 0 then
-        let item, pos = ast_of_buffer s pos in
-        iter (nitems-1) s pos (item :: ritems)
-      else (List.rev ritems, pos)
-    in
-    let items, pos = iter nitems s pos [] in
-    mkexp (SeqExp items) info loc, pos
-  | _ -> failwith (Printf.sprintf "ast_of_buffer: code %d unknown" code)
-
-let ast_of_buffer s =
-  let pos = 0 in
-  let buflen, pos = get_uint32 s pos in
-  Printf.fprintf stderr "buflen : %d\n%!" buflen;
-  let ast = ast_of_buffer s pos in
-  ()
-
-let _ =
-  jit_ocaml_register_callback_ml
-    (fun s ->
-      Printf.fprintf stderr "jit_ocaml_register_callback_ml\n%!";
-      try
-        let _ast = ast_of_buffer s in
-        "retour"
-      with e ->
-        Printf.fprintf stderr "jit_ocaml_register_callback_ml: exception %S\n%!"
-          (Printexc.to_string e);
-        "exception"
-    )

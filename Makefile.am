@@ -69,11 +69,15 @@ jit_ocaml.o: src/c/jit_ocaml.c
 	ocamlopt -c -I includes -fPIC src/c/jit_ocaml.c
 
 OCAML_SRCS = \
-	src/ocaml/scilabAst.ml
+	src/ocaml/scilabAst.ml \
+	src/ocaml/scilabString2Ast.ml
+
+OPTFLAGS = -c -fPIC -I src/ocaml
 
 libscijit_ocaml-runtime.o: $(OCAML_SRCS) jit_ocaml.o libasmrun.a
-	ocamlopt -c -fPIC src/ocaml/scilabAst.ml
-	ocamlopt -o libscijit_ocaml-runtime.o -output-obj src/ocaml/scilabAst.cmx
+	ocamlopt $(OPTFLAGS) src/ocaml/scilabAst.ml
+	ocamlopt $(OPTFLAGS) src/ocaml/scilabString2Ast.ml
+	ocamlopt -o libscijit_ocaml-runtime.o -output-obj src/ocaml/scilabAst.cmx src/ocaml/scilabString2Ast.cmx
 
 libasmrun.a:
 	cp $(OCAMLC_WHERE)/libasmrun.a .

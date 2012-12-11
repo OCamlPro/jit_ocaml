@@ -157,6 +157,17 @@ public:
     buf[pos++] = (n & 0xff);
   }
 
+  void add_wstring(const std::wstring &w)
+  {
+    int size = w.size();
+    const wchar_t *c_str = w.c_str();
+    int final_size = size * sizeof(wchar_t);
+    add_uint32(final_size);
+    need(final_size);
+    memcpy(buf + buflen, c_str, final_size);
+    buflen += final_size;
+  }
+
   int get_pos()
   { return buflen; }
 
@@ -179,12 +190,11 @@ public :
 
 public :
 
-  void visitprivate_SeqExp(const SeqExp *e){
-    add_ast(1,e);
+  void add_exps(const std::list<Exp *> exps)
+  {
     int current_pos = get_pos();
     int nitems = 0;
     add_uint32(0);
-    const std::list<Exp *> exps = e->exps_get();
     std::list<Exp *>::const_iterator it;
     for(it = exps.begin() ; it != exps.end() ; it++)
       {
@@ -193,19 +203,23 @@ public :
       }
     set_uint32(current_pos, nitems);
   }
+
+  void add_exp(const ast::Exp &e)
+  {
+    e.accept(*this);
+  }
+
+  void visitprivate_SeqExp(const SeqExp *e){ /* done */
+    add_ast(1,e);
+    add_exps(e->exps_get());
+  }
   void visitprivate_StringExp(const StringExp *e){ /* done */
     add_ast(2,e);
-    std::wstring w = e->value_get();
-    int size = w.size();
-    const wchar_t *c_str = w.c_str();
-    int final_size = size * sizeof(wchar_t);
-    add_uint32(final_size);
-    need(final_size);
-    memcpy(buf + buflen, c_str, final_size);
-    buflen += final_size;
+    add_wstring(e->value_get());
   }
-  void visitprivate_CommentExp(const CommentExp *e){
+  void visitprivate_CommentExp(const CommentExp *e){ /* done */
     add_ast(3,e);
+    add_wstring(e->comment_get());
   }
   void visitprivate_IntExp(const IntExp *e){
     add_ast(4,e);
@@ -302,8 +316,10 @@ public :
   {
     add_ast(34,e);
   }
-  void visitprivate_CallExp(const CallExp *e){
+  void visitprivate_CallExp(const CallExp *e){ /* done */
     add_ast(35,e);
+    add_exp(e->name_get());
+    add_exps(e->args_get());
   }
   void visitprivate_MatrixLineExp(const MatrixLineExp *e){
     add_ast(36,e);
