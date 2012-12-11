@@ -48,32 +48,6 @@ let get_ast s pos =
 let mkexp exp_desc exp_info exp_location =
   { exp_desc; exp_location; exp_info }
 
-let rec print_exp buf indent ast =
-  match ast.exp_desc with
-    SeqExp list ->
-      Printf.bprintf buf "%sSeqExp\n" indent;
-      let indent2 = indent ^ "  " in
-      List.iter (fun exp ->
-        print_exp buf indent2 exp;
-      ) list
-  | ConstExp exp ->
-    begin
-      match exp with
-      | StringExp { stringExp_value } ->
-          Printf.bprintf buf "%sStringExp %S\n" indent stringExp_value
-      | CommentExp { commentExp_comment } ->
-          Printf.bprintf buf "%sCommentExp %S\n" indent commentExp_comment
-    end
-  | CallExp { callExp_name; callExp_args } ->
-      Printf.bprintf buf "%sCallExp\n" indent;
-      Printf.bprintf buf "%sname:\n" indent;
-      let indent2 = indent ^ "    " in
-      print_exp buf indent2 callExp_name;
-      Printf.bprintf buf "%sargs:\n" indent;
-      Array.iter (fun exp ->
-        print_exp buf indent2 exp;
-      ) callExp_args
-
 
 let get_wstring s pos =
   let size, pos = get_uint32 s pos in
@@ -133,9 +107,7 @@ let _ =
       Printf.fprintf stderr "jit_ocaml_register_callback_ml\n%!";
       try
         let ast = ast_of_buffer s in
-        let b = Buffer.create 1024 in
-        print_exp b "" ast;
-        print_string (Buffer.contents b);
+        print_string (ScilabAstPrinter.to_string ast);
         print_newline ();
         "retour"
       with e ->

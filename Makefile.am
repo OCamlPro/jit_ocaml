@@ -68,16 +68,19 @@ OCAMLC_WHERE := `ocamlc -where`
 jit_ocaml.o: src/c/jit_ocaml.c
 	ocamlopt -c -I includes -fPIC src/c/jit_ocaml.c
 
-OCAML_SRCS = \
+OCAML_AST = \
 	src/ocaml/scilabAst.ml \
+	src/ocaml/scilabAstPrinter.ml
+OCAML_SRCS = \
+	$(OCAML_AST) \
 	src/ocaml/scilabString2Ast.ml
 
+OCAML_OBJS = $(OCAML_SRCS:.ml=.cmx)
 OPTFLAGS = -c -fPIC -I src/ocaml
 
 libscijit_ocaml-runtime.o: $(OCAML_SRCS) jit_ocaml.o libasmrun.a
-	ocamlopt $(OPTFLAGS) src/ocaml/scilabAst.ml
-	ocamlopt $(OPTFLAGS) src/ocaml/scilabString2Ast.ml
-	ocamlopt -o libscijit_ocaml-runtime.o -output-obj src/ocaml/scilabAst.cmx src/ocaml/scilabString2Ast.cmx
+	ocamlopt $(OPTFLAGS) $(OCAML_SRCS)
+	ocamlopt -o libscijit_ocaml-runtime.o -output-obj $(OCAML_OBJS)
 
 libasmrun.a:
 	cp $(OCAMLC_WHERE)/libasmrun.a .

@@ -528,10 +528,15 @@ pkglib_LTLIBRARIES = libscijit_ocaml.la
 libscijit_ocaml_la_LIBADD = libscijit_ocaml-runtime.o
 libscijit_ocaml_la_SOURCES = $(JIT_OCAML_CPP_SOURCES)
 OCAMLC_WHERE := `ocamlc -where`
-OCAML_SRCS = \
+OCAML_AST = \
 	src/ocaml/scilabAst.ml \
+	src/ocaml/scilabAstPrinter.ml
+
+OCAML_SRCS = \
+	$(OCAML_AST) \
 	src/ocaml/scilabString2Ast.ml
 
+OCAML_OBJS = $(OCAML_SRCS:.ml=.cmx)
 OPTFLAGS = -c -fPIC -I src/ocaml
 all: all-am
 
@@ -1114,9 +1119,8 @@ jit_ocaml.o: src/c/jit_ocaml.c
 	ocamlopt -c -I includes -fPIC src/c/jit_ocaml.c
 
 libscijit_ocaml-runtime.o: $(OCAML_SRCS) jit_ocaml.o libasmrun.a
-	ocamlopt $(OPTFLAGS) src/ocaml/scilabAst.ml
-	ocamlopt $(OPTFLAGS) src/ocaml/scilabString2Ast.ml
-	ocamlopt -o libscijit_ocaml-runtime.o -output-obj src/ocaml/scilabAst.cmx src/ocaml/scilabString2Ast.cmx
+	ocamlopt $(OPTFLAGS) $(OCAML_SRCS)
+	ocamlopt -o libscijit_ocaml-runtime.o -output-obj $(OCAML_OBJS)
 
 libasmrun.a:
 	cp $(OCAMLC_WHERE)/libasmrun.a .
