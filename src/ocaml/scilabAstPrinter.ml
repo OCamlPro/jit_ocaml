@@ -1,9 +1,58 @@
 open ScilabAst
 
+let string_of_opExp_Kind  = function
+  OpExp_invalid_kind -> "OpExp_invalid_kind"
+| OpExp_bool_kind -> "OpExp_bool_kind"
+| OpExp_string_kind -> "OpExp_string_kind"
+| OpExp_integer_kind -> "OpExp_integer_kind"
+| OpExp_float_kind -> "OpExp_float_kind"
+| OpExp_double_kind  -> "OpExp_double_kind"
+| OpExp_float_complex_kind  -> "OpExp_float_complex_kind"
+| OpExp_double_complex_kind  -> "OpExp_double_complex_kind"
+| OpExp_bool_matrix_kind  -> "OpExp_bool_matrix_kind"
+| OpExp_string_matrix_kind  -> "OpExp_string_matrix_kind"
+| OpExp_integer_matrix_kind  -> "OpExp_integer_matrix_kind"
+| OpExp_float_matrix_kind  -> "OpExp_float_matrix_kind"
+| OpExp_double_matrix_kind  -> "OpExp_double_matrix_kind"
+| OpExp_float_complex_matrix_kind  -> "OpExp_float_complex_matrix_kind"
+| OpExp_double_complex_matrix_kind  -> "OpExp_double_complex_matrix_kind"
+| OpExp_matrix_kind  -> "OpExp_matrix_kind"
+
+let string_of_opExp_Oper = function
+  | OpExp_plus -> "OpExp_plus"
+  | OpExp_minus -> "OpExp_minus"
+  | OpExp_times -> "OpExp_times"
+  | OpExp_rdivide -> "OpExp_rdivide"
+  | OpExp_ldivide -> "OpExp_ldivide"
+  | OpExp_power -> "OpExp_power"
+  | OpExp_unaryMinus -> "OpExp_unaryMinus"
+  | OpExp_dottimes -> "OpExp_dottimes"
+  | OpExp_dotrdivide -> "OpExp_dotrdivide"
+  | OpExp_dotldivide -> "OpExp_dotldivide"
+  | OpExp_dotpower -> "OpExp_dotpower"
+  | OpExp_krontimes -> "OpExp_krontimes"
+  | OpExp_kronrdivide -> "OpExp_kronrdivide"
+  | OpExp_kronldivide -> "OpExp_kronldivide"
+  | OpExp_controltimes -> "OpExp_controltimes"
+  | OpExp_controlrdivide -> "OpExp_controlrdivide"
+  | OpExp_controlldivide -> "OpExp_controlldivide"
+  | OpExp_eq -> "OpExp_eq"
+  | OpExp_ne -> "OpExp_ne"
+  | OpExp_lt -> "OpExp_lt"
+  | OpExp_le -> "OpExp_le"
+  | OpExp_gt -> "OpExp_gt"
+  | OpExp_ge -> "OpExp_ge"
+
+let string_of_logicalOpExp_Oper = function
+  | OpLogicalExp_logicalAnd -> "OpLogicalExp_logicalAnd"
+  | OpLogicalExp_logicalOr -> "OpLogicalExp_logicalOr"
+  | OpLogicalExp_logicalShortCutAnd -> "OpLogicalExp_logicalShortCutAnd"
+  | OpLogicalExp_logicalShortCutOr -> "OpLogicalExp_logicalShortCutOr"
+
 let rec print_exp buf indent ast =
   match ast.exp_desc with
 
-  | SeqExp list ->
+  |  SeqExp list ->
     Printf.bprintf buf "%sSeqExp\n" indent;
     let indent2 = indent ^ "  " in
     List.iter (fun exp ->
@@ -199,18 +248,60 @@ let rec print_exp buf indent ast =
       print_exp buf indent2 exp;
     ) array
 
-(*
   | MathExp mathExp ->
     begin
       match mathExp with
-      | MatrixExp of matrixExp
-      | MatrixLineExp of matrixLineExp
-      | NotExp of notExp
-      | OpExp of opExp_Oper opExp
-      | LogicalOpExp of opLogicalExp_Oper opExp
-      | TransposeExp of transposeExp
+      | MatrixExp { matrixExp_lines } ->
+        Printf.bprintf buf "%sMatrixExp\n" indent;
+        let indent2 = indent ^ "    " in
+        Array.iter (fun { matrixLineExp_columns } ->
+          Printf.bprintf buf "%s  line:\n" indent;
+          Array.iter (fun exp ->
+            print_exp buf indent2 exp
+          ) matrixLineExp_columns
+        ) matrixExp_lines
+
+      | MatrixLineExp exps ->
+        Printf.bprintf buf "%sMatrixLineExp\n" indent;
+        let indent2 = indent ^ "  " in
+        Array.iter (fun exp ->
+          print_exp buf indent2 exp;
+        ) exps
+
+      | NotExp { notExp_exp } ->
+        Printf.bprintf buf "%sNotExp\n" indent;
+        let indent2 = indent ^ "  " in
+        print_exp buf indent2 notExp_exp
+
+      | OpExp (opExp_oper, opExp_args) ->
+        print_opExp buf indent "OpExp"  opExp_args
+          (string_of_opExp_Oper opExp_oper)
+
+      | LogicalOpExp (opExp_oper, opExp_args) ->
+        print_opExp buf indent "LogicalOpExp" opExp_args
+          (string_of_logicalOpExp_Oper opExp_oper)
+
+      | TransposeExp { transposeExp_exp; transposeExp_conjugate } ->
+        Printf.bprintf buf "%sTransposeExp %s\n" indent
+          (match transposeExp_conjugate with
+            Conjugate -> "Conjugate"
+          | NonConjugate -> "NonConjugate");
+        let indent2 = indent ^ "  " in
+        print_exp buf indent2 transposeExp_exp
     end
-*)
+
+and print_opExp buf indent name opExp oper =
+  Printf.bprintf buf "%s%s %s %s\n" indent name oper
+    (string_of_opExp_Kind opExp.opExp_kind);
+  let indent2 = indent ^ "    " in
+  Printf.bprintf buf "%s  left:\n" indent;
+  print_exp buf indent2 opExp.opExp_left;
+  match opExp.opExp_right with
+    None -> ()
+  | Some opExp_right ->
+    Printf.bprintf buf "%s  right:\n" indent;
+    print_exp buf indent2 opExp_right
+
 
 and print_varDec buf indent {
   varDec_name; varDec_init; varDec_kind

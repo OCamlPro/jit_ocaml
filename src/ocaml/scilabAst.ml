@@ -228,10 +228,10 @@ and listExp = {
 
 and mathExp =
 | MatrixExp of matrixExp
-| MatrixLineExp of matrixLineExp
+| MatrixLineExp of exp array
 | NotExp of notExp
-| OpExp of opExp_Oper opExp
-| LogicalOpExp of opLogicalExp_Oper opExp
+| OpExp of opExp_Oper * opExp_args
+| LogicalOpExp of opLogicalExp_Oper * opExp_args
 | TransposeExp of transposeExp
 
 and matrixExp = {
@@ -239,6 +239,7 @@ and matrixExp = {
 }
 
 and matrixLineExp = {
+  matrixLineExp_location : Location.t;
   matrixLineExp_columns : exp array;
 }
 
@@ -246,9 +247,8 @@ and notExp = {
   notExp_exp : exp;
 }
 
-and 'a opExp = {
+and opExp_args = {
   opExp_left : exp;
-  opExp_oper : 'a;
   opExp_right : exp option;
   opExp_kind : opExp_Kind;
 }
