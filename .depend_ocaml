@@ -1,0 +1,12 @@
+src/ocaml/scilabAst.cmo :
+src/ocaml/scilabAst.cmx :
+src/ocaml/scilabAstPrinter.cmo : src/ocaml/scilabAst.cmo \
+    src/ocaml/scilabAstPrinter.cmi
+src/ocaml/scilabAstPrinter.cmx : src/ocaml/scilabAst.cmx \
+    src/ocaml/scilabAstPrinter.cmi
+src/ocaml/scilabString2Ast.cmo : src/ocaml/scilabAstPrinter.cmi \
+    src/ocaml/scilabAst.cmo src/ocaml/scilabString2Ast.cmi
+src/ocaml/scilabString2Ast.cmx : src/ocaml/scilabAstPrinter.cmx \
+    src/ocaml/scilabAst.cmx src/ocaml/scilabString2Ast.cmi
+src/ocaml/scilabAstPrinter.cmi :
+src/ocaml/scilabString2Ast.cmi :

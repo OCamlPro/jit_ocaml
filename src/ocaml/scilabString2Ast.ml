@@ -115,3 +115,5 @@ let _ =
           (Printexc.to_string e);
         "exception"
     )
+
+let main () = ()

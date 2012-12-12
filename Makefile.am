@@ -63,26 +63,75 @@ pkglib_LTLIBRARIES = libscijit_ocaml.la
 #
 libscijit_ocaml_la_LIBADD= libscijit_ocaml-runtime.o
 libscijit_ocaml_la_SOURCES = $(JIT_OCAML_CPP_SOURCES)
-OCAMLC_WHERE := `ocamlc -where`
+
+
+OCAMLOPT=ocamlopt
+OCAMLYACC=ocamlyacc
+OCAMLLEX=ocamllex
+OCAMLC_WHERE := `$(OCAMLOPT) -where`
+
 
 jit_ocaml.o: src/c/jit_ocaml.c
 	ocamlopt -c -I includes -fPIC src/c/jit_ocaml.c
 
-OCAML_AST = \
+OCAML_AST_MLS = \
 	src/ocaml/scilabAst.ml \
 	src/ocaml/scilabAstPrinter.ml
-OCAML_SRCS = \
-	$(OCAML_AST) \
+OCAML_AST_MLIS = \
+	src/ocaml/scilabAstPrinter.mli
+
+OCAML_SCILAB_MLS = \
 	src/ocaml/scilabString2Ast.ml
+OCAML_SCILAB_MLIS = \
+	src/ocaml/scilabString2Ast.mli
 
-OCAML_OBJS = $(OCAML_SRCS:.ml=.cmx)
-OPTFLAGS = -c -fPIC -I src/ocaml
+OCAML_MLS = \
+	$(OCAML_AST_MLS) \
+	$(OCAML_SCILAB_MLS)
 
-libscijit_ocaml-runtime.o: $(OCAML_SRCS) jit_ocaml.o libasmrun.a
-	ocamlopt $(OPTFLAGS) $(OCAML_SRCS)
-	ocamlopt -o libscijit_ocaml-runtime.o -output-obj $(OCAML_OBJS)
+OCAML_MLIS = \
+	$(OCAML_AST_MLIS) \
+	$(OCAML_SCILAB_MLIS)
+
+OCAML_CMIS = $(OCAML_MLS:.ml=.cmi) $(OCAML_MLIS:.mli=.cmi)
+OCAML_CMXS = $(OCAML_MLS:.ml=.cmx)
+OCAML_OBJS = $(OCAML_MLS:.ml=.o)
+
+OCAML_INCL= -I src/ocaml
+OPTFLAGS = -c -fPIC $(OCAML_INCL)
+
+
+CLEANFILES= \
+	$(OCAML_CMIS)  \
+	$(OCAML_CMXS)  \
+	$(OCAML_OBJS)  \
+	jit_ocaml.o \
+	libasmrun.a
+
+libscijit_ocaml-runtime.o: $(OCAML_CMXS) jit_ocaml.o libasmrun.a
+	$(OCAMLOPT) $(OPTFLAGS) $(OCAML_SRCS)
+	$(OCAMLOPT) -o libscijit_ocaml-runtime.o -output-obj $(OCAML_CMXS)
 
 libasmrun.a:
 	cp $(OCAMLC_WHERE)/libasmrun.a .
 
+
+.depend_ocaml:
+	$(OCAMLDEP) $(OCAML_INCL) $(OCAML_MLS) $(OCAML_MLIS) > .depend_ocaml
+include .depend_ocaml
+
+########## COMMON
+SUFFIXES += .ml .mli .mll .mly .cmi .cmx
+
+.ml.cmx:
+	$(OCAMLOPT) $(OPTFLAGS) -c $<
+
+.mli.cmi:
+	$(OCAMLOPT) $(OPTFLAGS) -c $<
+
+.mll.ml:
+	$(OCAMLLEX) $<
+
+.mly.ml:
+	$(OCAMLYACC) $<
 
