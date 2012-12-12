@@ -66,6 +66,8 @@ let get_wstring s pos =
   let pos = pos + size in
   wstring, pos
 
+let get_Symbol = get_wstring
+
 let get_OpExp_Kind s pos =
   let code, pos = get_uint8 s pos in
   let kind =
@@ -149,7 +151,7 @@ let get_IntExp_Prec s pos =
     | 2 -> IntExp_16
     | 3 -> IntExp_32
     | 4 -> IntExp_64
-    | _ -> failwith (Printf.sprintf "get_IntExp_Oper : unknown code %d" code)
+    | _ -> failwith (Printf.sprintf "get_IntExp_Prec : unknown code %d" code)
   in
   prec, pos
 
@@ -161,7 +163,18 @@ let get_IfExp_Kind s pos =
     | 2 -> IfExp_instruction_kind
     | 3 -> IfExp_expression_kind
     | 4 -> IfExp_untyped_kind
-    | _ -> failwith (Printf.sprintf "get_IfExp_Oper : unknown code %d" code)
+    | _ -> failwith (Printf.sprintf "get_IfExp_Kind : unknown code %d" code)
+  in
+  kind, pos
+
+let get_VarDec_Kind s pos =
+  let code, pos = get_uint8 s pos in
+  let kind =
+    match code with
+    | 1 -> VarDec_invalid_kind
+    | 2 -> VarDec_evaluation_kind
+    | 3 -> VarDec_assignment_kind
+    | _ -> failwith (Printf.sprintf "get_VarDec_Kind : unknown code %d" code)
   in
   kind, pos
 
@@ -267,6 +280,11 @@ let rec get_exp s pos =
     mkexp (Var { var_desc = ArrayListVar vars;
                  var_location = loc }) info loc, pos
 
+  | 13 ->
+    let fieldExp_head, pos = get_exp s pos in
+    let fieldExp_tail, pos = get_exp s pos in
+    mkexp (FieldExp { fieldExp_head; fieldExp_tail }) info loc, pos
+
   | 14 ->
     let ifExp_kind, pos = get_IfExp_Kind s pos in
     let has_else, pos = get_uint8 s pos in
@@ -282,6 +300,26 @@ let rec get_exp s pos =
     mkexp (ControlExp (IfExp {
       ifExp_kind; ifExp_test; ifExp_then; ifExp_else
     })) info loc, pos
+
+  | 15 ->
+    let tryCatchExp_tryme, pos = get_exps s pos in
+    let tryCatchExp_catchme, pos = get_exps s pos in
+    mkexp (ControlExp (TryCatchExp {
+      tryCatchExp_tryme; tryCatchExp_catchme })) info loc, pos
+
+  | 16 ->
+    let whileExp_test, pos = get_exp s pos in
+    let whileExp_body, pos = get_exp s pos in
+    mkexp (ControlExp (WhileExp {
+      whileExp_test; whileExp_body })) info loc, pos
+
+  | 17 ->
+    let forExp_vardec_location, pos = get_location s pos in
+    let forExp_vardec, pos = get_varDec s pos in
+    let forExp_body, pos = get_exp s pos in
+    mkexp (ControlExp (ForExp {
+      forExp_vardec_location;
+      forExp_vardec; forExp_body })) info loc, pos
 
   | 29 ->
     let functionDec_symbol, pos = get_wstring s pos in
@@ -349,6 +387,13 @@ let rec get_exp s pos =
       Printf.sprintf  "ast_of_buffer: code %d unknown" code);
     return_dummyExp := true;
     dummyExp, pos
+
+
+and get_varDec s pos =
+  let varDec_name, pos = get_Symbol s pos in
+  let varDec_kind, pos = get_VarDec_Kind s pos in
+  let varDec_init, pos = get_exp s pos in
+  { varDec_name; varDec_init; varDec_kind }, pos
 
 and get_exps s pos =
   if !return_dummyExp then [], pos else

@@ -532,6 +532,7 @@ libscijit_ocaml_la_SOURCES = $(JIT_OCAML_CPP_SOURCES)
 OCAMLC_WHERE := `$(OCAMLOPT) -where`
 OCAML_AST_MLS = \
 	src/ocaml/scilabAst.ml \
+	src/ocaml/scilabTypes.ml \
 	src/ocaml/scilabAstPrinter.ml
 
 OCAML_AST_MLIS = \

@@ -56,7 +56,6 @@ and dec =
 | FunctionDec of functionDec
 
 and varDec = {
-  varDec_location : Location.t;
   varDec_name : Symbol.t;
   varDec_init : exp;
   varDec_kind : varDec_Kind;
@@ -184,6 +183,7 @@ and caseExp = {
 }
 
 and forExp = {
+  forExp_vardec_location : Location.t;
   forExp_vardec : varDec;
   forExp_body : exp;
 }
@@ -218,7 +218,7 @@ and whileExp = {
 }
 
 and fieldExp = {
-  fieldExp_name : exp; (* field name *)
+  fieldExp_head : exp; (* field name *)
   fieldExp_tail : exp; (* initial value *)
 }
 

@@ -229,14 +229,14 @@ public :
     set_uint32(current_pos, nitems);
   }
 
-  void add_Symbol(const symbol::Symbol e)
+  void add_Symbol(const symbol::Symbol* e)
   {
-    add_wstring(e.name_get());
+    add_wstring(e->name_get());
   }
 
-  void add_exp(const ast::Exp &e)
+  void add_exp(const ast::Exp *e)
   {
-    e.accept(*this);
+    e->accept(*this);
   }
 
   void add_IfExp_Kind(ast::IfExp::Kind kind)
@@ -333,6 +333,24 @@ public :
     add_uint8(code);
   }
 
+  void add_VarDecKind(const ast::VarDec::Kind kind)
+  {
+    int code = 250;
+    switch(kind){
+    case ast::VarDec::invalid_kind : code = (1); break;
+    case ast::VarDec::evaluation_kind: code = (2); break;
+    case ast::VarDec::assignment_kind: code = (3); break;
+    }
+    add_uint8(code);
+  }
+
+
+  void add_varDec(const ast::VarDec* varDec)
+  {
+    add_Symbol(& varDec->name_get());
+    add_VarDecKind(varDec->kind_get());
+    add_exp(& varDec->init_get());
+  }
 
   void visitprivate_SeqExp(const SeqExp *e){ /* done */
     add_ast(1,e);
@@ -368,7 +386,7 @@ public :
   }
   void visitprivate_SimpleVar(const SimpleVar *e){ /* done */
     add_ast(9,e);
-    add_Symbol(e->name_get());
+    add_Symbol(& e->name_get());
   }
   void visitprivate_ColonVar(const ColonVar *e){ /* done */
     add_ast(10,e);
@@ -380,26 +398,35 @@ public :
     add_ast(12,e);
     add_vars(e);
   }
-  void visitprivate_FieldExp(const FieldExp *e){
+  void visitprivate_FieldExp(const FieldExp *e){ /* done */
     add_ast(13,e);
+    add_exp(e->head_get());
+    add_exp(e->tail_get());
   }
   void visitprivate_IfExp(const IfExp *e){ /* done */
     add_ast(14,e);
     add_IfExp_Kind(e->kind_get());
     bool has_else = e->has_else();
     add_uint8(has_else);
-    add_exp(e->test_get());
-    add_exp(e->then_get());
-    if( has_else ) add_exp(e->else_get());
+    add_exp(& e->test_get());
+    add_exp(& e->then_get());
+    if( has_else ) add_exp(& e->else_get());
   }
-  void visitprivate_TryCatchExp(const TryCatchExp *e){
+  void visitprivate_TryCatchExp(const TryCatchExp *e){ /* done */
     add_ast(15,e);
+    add_exps(e->try_get().exps_get());
+    add_exps(e->catch_get().exps_get());
   }
   void visitprivate_WhileExp(const WhileExp *e){
     add_ast(16,e);
+    add_exp(& e->test_get());
+    add_exp(& e->body_get());
   }
   void visitprivate_ForExp(const ForExp *e){
     add_ast(17,e);
+    add_location(& e->vardec_get().location_get());
+    add_varDec(& e->vardec_get());
+    add_exp(& e->body_get());
   }
   void visitprivate_BreakExp(const BreakExp *e){
     add_ast(18,e);
@@ -437,8 +464,8 @@ public :
   }
   void visitprivate_FunctionDec(const FunctionDec *e){
     add_ast(29,e);
-    add_Symbol(e->name_get());    
-    add_exp(e->body_get());
+    add_Symbol(& e->name_get());    
+    add_exp(& e->body_get());
     add_location(& e->args_get().location_get());
     add_vars(& e->args_get());
     add_location(& e->returns_get().location_get());
@@ -449,8 +476,8 @@ public :
   }
   void visitprivate_AssignExp(const AssignExp *e){ /* TODO */
     add_ast(31,e);
-    add_exp(e->left_exp_get());
-    add_exp(e->right_exp_get());
+    add_exp(& e->left_exp_get());
+    add_exp(& e->right_exp_get());
     /* TODO: e->right_val_get() */
   }
   void visitprivate_OpExp(const OpExp *e){ /* done */
@@ -484,7 +511,7 @@ public :
   }
   void visitprivate_CallExp(const CallExp *e){ /* done */
     add_ast(35,e);
-    add_exp(e->name_get());
+    add_exp(& e->name_get());
     add_exps(e->args_get());
   }
   void visitprivate_MatrixLineExp(const MatrixLineExp *e){

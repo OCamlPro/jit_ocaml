@@ -222,11 +222,11 @@ let rec print_exp buf indent ast =
 
     end
 
-  | FieldExp { fieldExp_name; fieldExp_tail } ->
+  | FieldExp { fieldExp_head; fieldExp_tail } ->
     Printf.bprintf buf "%sFieldExp\n" indent;
     let indent2 = indent ^ "    " in
-    Printf.bprintf buf "%s  name:\n" indent;
-    print_exp buf indent2 fieldExp_name;
+    Printf.bprintf buf "%s  head:\n" indent;
+    print_exp buf indent2 fieldExp_head;
     Printf.bprintf buf "%s  tail:\n" indent;
     print_exp buf indent2 fieldExp_tail;
 

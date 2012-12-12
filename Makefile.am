@@ -76,6 +76,7 @@ jit_ocaml.o: src/c/jit_ocaml.c
 
 OCAML_AST_MLS = \
 	src/ocaml/scilabAst.ml \
+	src/ocaml/scilabTypes.ml \
 	src/ocaml/scilabAstPrinter.ml
 OCAML_AST_MLIS = \
 	src/ocaml/scilabAstPrinter.mli
