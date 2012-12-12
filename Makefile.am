@@ -81,9 +81,11 @@ OCAML_AST_MLIS = \
 	src/ocaml/scilabAstPrinter.mli
 
 OCAML_SCILAB_MLS = \
-	src/ocaml/scilabString2Ast.ml
+	src/ocaml/scilabString2Ast.ml \
+	src/ocaml/scilabCallbacks.ml
 OCAML_SCILAB_MLIS = \
-	src/ocaml/scilabString2Ast.mli
+	src/ocaml/scilabString2Ast.mli \
+	src/ocaml/scilabCallbacks.mli
 
 OCAML_MLS = \
 	$(OCAML_AST_MLS) \
@@ -109,15 +111,14 @@ CLEANFILES= \
 	libasmrun.a
 
 libscijit_ocaml-runtime.o: $(OCAML_CMXS) jit_ocaml.o libasmrun.a
-	$(OCAMLOPT) $(OPTFLAGS) $(OCAML_SRCS)
 	$(OCAMLOPT) -o libscijit_ocaml-runtime.o -output-obj $(OCAML_CMXS)
 
 libasmrun.a:
 	cp $(OCAMLC_WHERE)/libasmrun.a .
 
 
-.depend_ocaml:
-	$(OCAMLDEP) $(OCAML_INCL) $(OCAML_MLS) $(OCAML_MLIS) > .depend_ocaml
+depend_ocaml:
+	$(OCAMLDEP) -native $(OCAML_INCL) $(OCAML_MLS) $(OCAML_MLIS) > .depend_ocaml
 include .depend_ocaml
 
 ########## COMMON

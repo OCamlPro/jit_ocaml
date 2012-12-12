@@ -4,6 +4,7 @@
 #include <caml/mlvalues.h>
 #include <caml/memory.h>
 #include <caml/callback.h>
+#include <caml/alloc.h>
 #include <stdlib.h>
 #include "jit_ocaml.h"
 
@@ -30,4 +31,11 @@ char* jit_ocaml_analyze(char *buf)
   fprintf(stderr, "%d %d %d %d\n", buf[0],buf[1],buf[2],buf[3]);
   ret = caml_callback(jit_ocaml_registered_callback, (value)buf);
   return buf;
+}
+
+value jit_ocaml_get_double_c(value s_v, value pos_v)
+{
+  char *s = (char*)s_v;
+  int pos = Int_val(pos_v);
+  return caml_copy_double( *(double*)(s+pos) );
 }

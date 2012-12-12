@@ -49,6 +49,16 @@ let string_of_logicalOpExp_Oper = function
   | OpLogicalExp_logicalShortCutAnd -> "OpLogicalExp_logicalShortCutAnd"
   | OpLogicalExp_logicalShortCutOr -> "OpLogicalExp_logicalShortCutOr"
 
+let string_of_unicode s =
+  let len = String.length s in
+  let b = Buffer.create len in
+  for i = 0 to len-1 do
+    let c= s.[i] in
+    if c <> '\000' then Buffer.add_char b c
+  done;
+  Buffer.contents b
+
+
 let rec print_exp buf indent ast =
   match ast.exp_desc with
 
@@ -63,9 +73,9 @@ let rec print_exp buf indent ast =
     begin
       match exp with
       | StringExp { stringExp_value } ->
-        Printf.bprintf buf "%sStringExp %S\n" indent stringExp_value
+        Printf.bprintf buf "%sStringExp %S\n" indent (string_of_unicode stringExp_value)
       | CommentExp { commentExp_comment } ->
-        Printf.bprintf buf "%sCommentExp %S\n" indent commentExp_comment
+        Printf.bprintf buf "%sCommentExp %S\n" indent (string_of_unicode commentExp_comment)
       | BoolExp { boolExp_value } ->
         Printf.bprintf buf "%sBoolExp %b\n" indent boolExp_value
       | DoubleExp { doubleExp_value } ->
@@ -73,7 +83,7 @@ let rec print_exp buf indent ast =
       | FloatExp  { floatExp_value } ->
         Printf.bprintf buf "%sFloatExp %f\n" indent floatExp_value
       | IntExp { intExp_value; intExp_prec } ->
-        Printf.bprintf buf "%sIntExp%d %Ld\n" indent
+        Printf.bprintf buf "%sIntExp%d %ld\n" indent
           (match intExp_prec with
             IntExp_8 -> 8
           | IntExp_16 -> 16
@@ -125,7 +135,8 @@ let rec print_exp buf indent ast =
           (match ifExp_kind with
             IfExp_invalid_kind -> "invalid_kind"
           | IfExp_instruction_kind -> "instruction_kind"
-          | IfExp_expression_kind -> "expression_kind");
+          | IfExp_expression_kind -> "expression_kind"
+          | IfExp_untyped_kind -> "untyped_kind");
         let indent2 = indent ^ "    " in
         Printf.bprintf buf "%s  test:\n" indent;
         print_exp buf indent2 ifExp_test;
@@ -200,12 +211,12 @@ let rec print_exp buf indent ast =
         functionDec_returns;
         functionDec_body;
       } ->
-        Printf.bprintf buf "%sFunctionDec %S\n" indent functionDec_symbol;
+        Printf.bprintf buf "%sFunctionDec %S\n" indent (string_of_unicode functionDec_symbol);
         let indent2 = indent ^ "    " in
         Printf.bprintf buf "%s  args:\n" indent;
-        Array.iter (fun var -> print_var buf indent2 var) functionDec_args;
+        print_vars buf indent2 functionDec_args.arrayListVar_vars;
         Printf.bprintf buf "%s  returns:\n" indent;
-        Array.iter (fun var -> print_var buf indent2 var) functionDec_returns;
+        print_vars buf indent2 functionDec_returns.arrayListVar_vars;
         Printf.bprintf buf "%s  body:\n" indent;
         print_exp buf indent2 functionDec_body
 
@@ -302,11 +313,13 @@ and print_opExp buf indent name opExp oper =
     Printf.bprintf buf "%s  right:\n" indent;
     print_exp buf indent2 opExp_right
 
+and print_vars buf indent vars =
+  Array.iter (fun var -> print_var buf indent var) vars
 
 and print_varDec buf indent {
   varDec_name; varDec_init; varDec_kind
 } =
-  Printf.bprintf buf "%sVarDec %S (%s)\n" indent varDec_name
+  Printf.bprintf buf "%sVarDec %S (%s)\n" indent (string_of_unicode varDec_name)
     (match varDec_kind with
       VarDec_invalid_kind -> "invalid_kind"
     | VarDec_evaluation_kind -> "evaluation_kind"
@@ -322,11 +335,11 @@ and print_var buf indent { var_desc } =
   | DollarVar ->
     Printf.bprintf buf "%sDollarVar\n" indent
   | SimpleVar s ->
-    Printf.bprintf buf "%sSimpleVar %S\n" indent s
+    Printf.bprintf buf "%sSimpleVar %S\n" indent (string_of_unicode s)
   | ArrayListVar vars ->
     Printf.bprintf buf "%sArrayListVar\n" indent;
     let indent2 = indent ^ "  " in
-    Array.iter (fun var -> print_var buf indent2 var) vars
+    print_vars buf indent2 vars
 
 let to_string ast =
   let b = Buffer.create 1024 in

@@ -70,8 +70,8 @@ and varDec_Kind =
 and functionDec =  {
   functionDec_location : Location.t;
   functionDec_symbol : Symbol.t;
-  functionDec_args : var array;
-  functionDec_returns : var array;
+  functionDec_args : arrayListVar;
+  functionDec_returns : arrayListVar;
   functionDec_body : exp;
 }
 
@@ -146,7 +146,7 @@ and floatExp = {
 }
 
 and intExp = {
-  intExp_value : int64;
+  intExp_value : int32;
   intExp_prec : intExp_Prec;
 }
 
@@ -199,6 +199,8 @@ and ifExp_Kind =
   IfExp_invalid_kind
 | IfExp_instruction_kind
 | IfExp_expression_kind
+
+| IfExp_untyped_kind (* not yet known *)
 
 and returnExp = {
   returnExp_exp : exp;
@@ -352,12 +354,16 @@ and var = {
   var_desc : var_desc;
 }
 
-
 and var_desc =
 | ColonVar  (* a ; *)
 | DollarVar (* a $ *)
 | SimpleVar of Symbol.t
 | ArrayListVar of var array
+
+and arrayListVar = {
+  arrayListVar_location : Location.t;
+  arrayListVar_vars : var array;
+}
 
 (*
 in runvisitor.hxx:

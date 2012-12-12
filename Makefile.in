@@ -538,10 +538,12 @@ OCAML_AST_MLIS = \
 	src/ocaml/scilabAstPrinter.mli
 
 OCAML_SCILAB_MLS = \
-	src/ocaml/scilabString2Ast.ml
+	src/ocaml/scilabString2Ast.ml \
+	src/ocaml/scilabCallbacks.ml
 
 OCAML_SCILAB_MLIS = \
-	src/ocaml/scilabString2Ast.mli
+	src/ocaml/scilabString2Ast.mli \
+	src/ocaml/scilabCallbacks.mli
 
 OCAML_MLS = \
 	$(OCAML_AST_MLS) \
@@ -1145,26 +1147,30 @@ jit_ocaml.o: src/c/jit_ocaml.c
 	ocamlopt -c -I includes -fPIC src/c/jit_ocaml.c
 
 libscijit_ocaml-runtime.o: $(OCAML_CMXS) jit_ocaml.o libasmrun.a
-	$(OCAMLOPT) $(OPTFLAGS) $(OCAML_SRCS)
 	$(OCAMLOPT) -o libscijit_ocaml-runtime.o -output-obj $(OCAML_CMXS)
 
 libasmrun.a:
 	cp $(OCAMLC_WHERE)/libasmrun.a .
 
-.depend_ocaml:
-	$(OCAMLDEP) $(OCAML_INCL) $(OCAML_MLS) $(OCAML_MLIS) > .depend_ocaml
+depend_ocaml:
+	$(OCAMLDEP) -native $(OCAML_INCL) $(OCAML_MLS) $(OCAML_MLIS) > .depend_ocaml
 src/ocaml/scilabAst.cmo :
 src/ocaml/scilabAst.cmx :
-src/ocaml/scilabAstPrinter.cmo : src/ocaml/scilabAst.cmo \
+src/ocaml/scilabAstPrinter.cmo : src/ocaml/scilabAst.cmx \
     src/ocaml/scilabAstPrinter.cmi
 src/ocaml/scilabAstPrinter.cmx : src/ocaml/scilabAst.cmx \
     src/ocaml/scilabAstPrinter.cmi
-src/ocaml/scilabString2Ast.cmo : src/ocaml/scilabAstPrinter.cmi \
-    src/ocaml/scilabAst.cmo src/ocaml/scilabString2Ast.cmi
-src/ocaml/scilabString2Ast.cmx : src/ocaml/scilabAstPrinter.cmx \
-    src/ocaml/scilabAst.cmx src/ocaml/scilabString2Ast.cmi
-src/ocaml/scilabAstPrinter.cmi :
-src/ocaml/scilabString2Ast.cmi :
+src/ocaml/scilabString2Ast.cmo : src/ocaml/scilabAst.cmx \
+    src/ocaml/scilabString2Ast.cmi
+src/ocaml/scilabString2Ast.cmx : src/ocaml/scilabAst.cmx \
+    src/ocaml/scilabString2Ast.cmi
+src/ocaml/scilabCallbacks.cmo : src/ocaml/scilabString2Ast.cmi \
+    src/ocaml/scilabAstPrinter.cmi src/ocaml/scilabCallbacks.cmi
+src/ocaml/scilabCallbacks.cmx : src/ocaml/scilabString2Ast.cmx \
+    src/ocaml/scilabAstPrinter.cmx src/ocaml/scilabCallbacks.cmi
+src/ocaml/scilabAstPrinter.cmi : src/ocaml/scilabAst.cmx
+src/ocaml/scilabString2Ast.cmi : src/ocaml/scilabAst.cmx
+src/ocaml/scilabCallbacks.cmi :
 
 .ml.cmx:
 	$(OCAMLOPT) $(OPTFLAGS) -c $<

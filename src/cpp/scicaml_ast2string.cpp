@@ -80,7 +80,7 @@ public:
     {
       // if we free [buf] now, it is not available for OCaml...
       // free(buf);
-      std::cerr << "~SerializerVisitor" << std::endl;
+      //      std::cerr << "~SerializerVisitor" << std::endl;
       buf = NULL;
       bufsize = 0;
       buflen = 0;
@@ -90,20 +90,24 @@ public:
   char *get_buf(void){ 
     need(1);
     set_uint32(0, buflen);
-    std::cerr << "get_buf :" << buflen << std::endl;
+    //    std::cerr << "get_buf :" << buflen << std::endl;
     fprintf(stderr, "%d %d %d %d\n", buf[0],buf[1],buf[2],buf[3]);
     return buf; 
   }
 
+  void add_location(const Location* loc)
+  {
+    add_uint32(loc->first_line);
+    add_uint32(loc->first_column);
+    add_uint32(loc->last_line);
+    add_uint32(loc->last_column);    
+  }
   void add_ast(unsigned int code, const ast::Exp* e)
   {
     Location loc = e->location_get();
-    std::cerr << "add_ast :" << code << std::endl;
+    //    std::cerr << "add_ast :" << code << std::endl;
     add_uint8(code);
-    add_uint32(loc.first_line);
-    add_uint32(loc.first_column);
-    add_uint32(loc.last_line);
-    add_uint32(loc.last_column);    
+    add_location(&e->location_get());
     add_uint8(e->is_verbose());
     add_uint8(e->is_break());
     add_uint8(e->is_breakable());
@@ -119,7 +123,7 @@ public:
     if( bufsize - buflen < size ){
       bufsize = 2 * bufsize + size + 2048;
       char *newbuf = (char*) malloc(bufsize);
-      std::cerr << "need : malloc " << bufsize << std::endl;
+      //      std::cerr << "need : malloc " << bufsize << std::endl;
       if( buflen > 0 )
 	memcpy(newbuf, buf, buflen);
       if( buf != NULL)
@@ -145,15 +149,22 @@ public:
     buf[buflen++] = (n & 0xff);
   }
 
+  void add_double(double d)
+  {
+    need(8);
+    *(double*)(buf + buflen) = d;
+    buflen += 8;
+  }
+
   void set_uint32(unsigned int pos, unsigned int n)
   {
-     std::cerr << "set_uint32 : n " << n << std::endl;
+    //     std::cerr << "set_uint32 : n " << n << std::endl;
      buf[pos++] = (n & 0xff); n >>= 8;
-     std::cerr << "set_uint32 : n " << n << std::endl;
+     //     std::cerr << "set_uint32 : n " << n << std::endl;
     buf[pos++] = (n & 0xff); n >>= 8;
-     std::cerr << "set_uint32 : n " << n << std::endl;
+    //     std::cerr << "set_uint32 : n " << n << std::endl;
     buf[pos++] = (n & 0xff); n >>= 8;
-     std::cerr << "set_uint32 : n " << n << std::endl;
+    //     std::cerr << "set_uint32 : n " << n << std::endl;
     buf[pos++] = (n & 0xff);
   }
 
@@ -204,10 +215,124 @@ public :
     set_uint32(current_pos, nitems);
   }
 
+  void add_vars(const ast::ArrayListVar* var)
+  {
+    int current_pos = get_pos();
+    int nitems = 0;
+    add_uint32(0);
+    std::list<Var *>::const_iterator it;
+    for(it = var->vars_get().begin() ; it != var->vars_get().end() ; it++)
+      {
+	(*it)->accept(*this);
+	nitems ++;
+      }
+    set_uint32(current_pos, nitems);
+  }
+
+  void add_Symbol(const symbol::Symbol e)
+  {
+    add_wstring(e.name_get());
+  }
+
   void add_exp(const ast::Exp &e)
   {
     e.accept(*this);
   }
+
+  void add_IfExp_Kind(ast::IfExp::Kind kind)
+  {
+    int code = 255;
+
+    switch(kind){
+    case ast::IfExp::invalid_kind : code = (1); break;
+    case ast::IfExp::instruction_kind : code = (2); break;
+    case ast::IfExp::expression_kind : code = (3); break;
+    default : code = (4); break;
+    }
+    add_uint8(code);
+  }
+
+  void add_OpExp_Kind(ast::OpExp::Kind kind)
+  {
+    int code = 254;
+
+    switch(kind){
+    case ast::OpExp::invalid_kind : code = (1); break;
+    case ast::OpExp::bool_kind : code = (2); break;
+    case ast::OpExp::string_kind : code = (3); break;
+    case ast::OpExp::integer_kind : code = (4); break;
+    case ast::OpExp::float_kind : code = (5); break;
+    case ast::OpExp::double_kind : code = (6); break;
+    case ast::OpExp::float_complex_kind : code = (7); break;
+    case ast::OpExp::double_complex_kind : code = (8); break;
+      
+    case ast::OpExp::bool_matrix_kind : code = (9); break;
+    case ast::OpExp::string_matrix_kind : code = (10); break;
+    case ast::OpExp::integer_matrix_kind : code = (11); break;
+    case ast::OpExp::float_matrix_kind : code = (12); break;
+    case ast::OpExp::double_matrix_kind : code = (13); break;
+    case ast::OpExp::float_complex_matrix_kind : code = (14); break;
+    case ast::OpExp::double_complex_matrix_kind : code = (15); break;
+      
+    case ast::OpExp::matrix_kind : code = (16); break;
+     }
+    add_uint8(code);
+  }
+
+  void add_OpExp_Oper(const ast::OpExp::Oper oper)
+  {
+    int code = 253;
+    switch(oper){
+
+    case ast::OpExp::plus : code = (1); break;
+    case ast::OpExp::minus: code = (2); break;
+    case ast::OpExp::times: code = (3); break;
+    case ast::OpExp::rdivide: code = (4); break;
+    case ast::OpExp::ldivide: code = (5); break;
+    case ast::OpExp::power: code = (6); break;
+
+    case ast::OpExp::dottimes: code = (7); break;
+    case ast::OpExp::dotrdivide: code = (8); break;
+    case ast::OpExp::dotldivide: code = (9); break;
+    case ast::OpExp::dotpower: code = (10); break;
+
+    case ast::OpExp::krontimes: code = (11); break;
+    case ast::OpExp::kronrdivide: code = (12); break;
+    case ast::OpExp::kronldivide: code = (13); break;
+
+    case ast::OpExp::controltimes: code = (14); break;
+    case ast::OpExp::controlrdivide: code = (15); break;
+    case ast::OpExp::controlldivide: code = (16); break;
+
+    case ast::OpExp::eq: code = (17); break;
+    case ast::OpExp::ne: code = (18); break;
+    case ast::OpExp::lt: code = (19); break;
+    case ast::OpExp::le: code = (20); break;
+    case ast::OpExp::gt: code = (21); break;
+    case ast::OpExp::ge: code = (22); break;
+
+    case ast::OpExp::unaryMinus: code = (23); break;
+
+    case ast::OpExp::logicalAnd: code = (24); break;
+    case ast::OpExp::logicalOr: code = (25); break;
+    case ast::OpExp::logicalShortCutAnd: code = (26); break;
+    case ast::OpExp::logicalShortCutOr: code = (27); break;
+    }
+    add_uint8(code);
+  }
+
+  void add_IntExp_Prec(const ast::IntExp::Prec prec)
+  {
+    int code = 251;
+    switch(prec){
+    case ast::IntExp::_8_ : code = (1); break;
+    case ast::IntExp::_16_: code = (2); break;
+    case ast::IntExp::_32_: code = (3); break;
+    case ast::IntExp::_64_: code = (4); break;
+    }
+    add_uint8(code);
+  }
+
 
   void visitprivate_SeqExp(const SeqExp *e){ /* done */
     add_ast(1,e);
@@ -221,38 +346,51 @@ public :
     add_ast(3,e);
     add_wstring(e->comment_get());
   }
-  void visitprivate_IntExp(const IntExp *e){
+  void visitprivate_IntExp(const IntExp *e){ /* done */
     add_ast(4,e);
+    add_IntExp_Prec(e->prec_get());
+    add_uint32(e->value_get());
   }
-  void visitprivate_FloatExp(const FloatExp *e){
+  void visitprivate_FloatExp(const FloatExp *e){  /* done */
     add_ast(5,e);
+    add_double(e->value_get());
   }
-  void visitprivate_DoubleExp(const DoubleExp *e){
+  void visitprivate_DoubleExp(const DoubleExp *e){ /* done */
     add_ast(6,e);
+    add_double(e->value_get());
   }
-  void visitprivate_BoolExp(const BoolExp *e){
+  void visitprivate_BoolExp(const BoolExp *e){ /* done */
     add_ast(7,e);
+    add_uint8(e->value_get());
   }
-  void visitprivate_NilExp(const NilExp *e){
+  void visitprivate_NilExp(const NilExp *e){ /* done */
     add_ast(8,e);
   }
-  void visitprivate_SimpleVar(const SimpleVar *e){
+  void visitprivate_SimpleVar(const SimpleVar *e){ /* done */
     add_ast(9,e);
+    add_Symbol(e->name_get());
   }
-  void visitprivate_ColonVar(const ColonVar *e){
+  void visitprivate_ColonVar(const ColonVar *e){ /* done */
     add_ast(10,e);
   }
-  void visitprivate_DollarVar(const DollarVar *e){
+  void visitprivate_DollarVar(const DollarVar *e){ /* done */
     add_ast(11,e);
   }
-  void visitprivate_ArrayListVar(const ArrayListVar *e){
+  void visitprivate_ArrayListVar(const ArrayListVar *e){ /* done */
     add_ast(12,e);
+    add_vars(e);
   }
   void visitprivate_FieldExp(const FieldExp *e){
     add_ast(13,e);
   }
-  void visitprivate_IfExp(const IfExp *e){
+  void visitprivate_IfExp(const IfExp *e){ /* done */
     add_ast(14,e);
+    add_IfExp_Kind(e->kind_get());
+    bool has_else = e->has_else();
+    add_uint8(has_else);
+    add_exp(e->test_get());
+    add_exp(e->then_get());
+    if( has_else ) add_exp(e->else_get());
   }
   void visitprivate_TryCatchExp(const TryCatchExp *e){
     add_ast(15,e);
@@ -299,22 +437,50 @@ public :
   }
   void visitprivate_FunctionDec(const FunctionDec *e){
     add_ast(29,e);
+    add_Symbol(e->name_get());    
+    add_exp(e->body_get());
+    add_location(& e->args_get().location_get());
+    add_vars(& e->args_get());
+    add_location(& e->returns_get().location_get());
+    add_vars(& e->returns_get());
   }
   void visitprivate_ListExp(const ListExp *e){
     add_ast(30,e);
   }
-  void visitprivate_AssignExp(const AssignExp *e){
+  void visitprivate_AssignExp(const AssignExp *e){ /* TODO */
     add_ast(31,e);
+    add_exp(e->left_exp_get());
+    add_exp(e->right_exp_get());
+    /* TODO: e->right_val_get() */
   }
-  void visitprivate_OpExp(const OpExp *e){
-    add_ast(32,e);
+  void visitprivate_OpExp(const OpExp *e){ /* done */
+    add_ast(32,e);    
+    add_OpExp_Kind(e->kind_get());
+    add_OpExp_Oper(e->oper_get());
+    e->left_get().accept(*this);
+    e->right_get().accept(*this);
   }
-  void visitprivate_LogicalOpExp(const LogicalOpExp *e){
+  void visitprivate_LogicalOpExp(const LogicalOpExp *e){ /* done */
     add_ast(33,e);
+    add_OpExp_Kind(e->kind_get());
+    add_OpExp_Oper(e->oper_get());
+    e->left_get().accept(*this);
+    e->right_get().accept(*this);
   }
-  void visitprivate_MatrixExp(const MatrixExp *e)
+  void visitprivate_MatrixExp(const MatrixExp *e) /* done */
   {
     add_ast(34,e);
+    int current_pos = get_pos();
+    int nitems = 0;
+    add_uint32(0);
+    std::list<MatrixLineExp *>::const_iterator it;
+    for(it = e->lines_get().begin() ; it != e->lines_get().end() ; it++)
+      {
+	add_location(& (*it)->location_get());
+	add_exps((*it)->columns_get());
+	nitems ++;
+      }
+    set_uint32(current_pos, nitems);
   }
   void visitprivate_CallExp(const CallExp *e){ /* done */
     add_ast(35,e);
