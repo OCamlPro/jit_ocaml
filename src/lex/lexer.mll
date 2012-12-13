@@ -36,6 +36,8 @@ let utf  = (utf2 | utf3 | utf4)
 
 let id   = ((['a'-'z''A'-'Z''_''%''#''?''$'] | utf)(['a'-'z''A'-'Z''_''0'-'9''#''?''$'] | utf))*
 
+let booltrue  = "%t" | "%T"
+let boolfalse = "%f" | "%F" 
 
 let lbrack    = "["
 let rbrack    = "]"
@@ -81,6 +83,8 @@ rule token = parse
   | lbrack                       { LBRACK }
   | rbrack                       { RBRACK }
   | dollar                       { DOLLAR }
+  | booltrue                     { BOOLTRUE }
+  | boolfalse                    { BOOLFALSE }
   | id as str                    { Printf.printf "ID = %s" str;ID str }
   | eof                          { exit 0 }
       

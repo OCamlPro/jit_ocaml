@@ -24,8 +24,8 @@
 
 %token LBRACK RBRACK LPAREN RPAREN LBRACE RBRACE DOLLAR SPACES
 %token COMMA EOL DOLLAR SEMI IF THEN ELSE ELSEIF END WHILE DO 
-%token COLON ASSIGN
-%token ID COMMENT
+%token COLON ASSIGN ID
+%token COMMENT BOOLTRUE BOOLFALSE
 %token<float> VARINT
 %token<float> VARFLOAT
 %token<float> NUM
@@ -55,8 +55,36 @@ expression :
 /* FUNCTIONCALL */
 functionCall :
 | simpleFunctionCall                            { $1 }
-/* | specificFunctionCall                          { $1 } */
+| specificFunctionCall                          { $1 } 
 | LPAREN functionCall RPAREN                    { $2 }
+
+specificFunctionCall :
+| BOOLTRUE LPAREN functionArgs RPAREN           { let varloc_st = Parsing.rhs_start_pos 1 in
+                                                  let varloc_end = Parsing.rhs_end_pos 1 in
+                                                  let varloc = create_loc varloc_st varloc_end in
+                                                  let varexp = 
+                                                    Var { var_location = varloc;
+                                                          var_desc = SimpleVar "%t" } in
+                                                  let callexp = 
+                                                    { callExp_name = create_exp varloc varexp;
+                                                      callExp_args = Array.of_list $3} in
+                                                  let fcall_st = Parsing.rhs_start_pos 1 in
+                                                  let fcall_end = Parsing.rhs_end_pos 4 in
+                                                  let loc = create_loc fcall_st fcall_end in
+                                                  create_exp loc (CallExp callexp) }
+| BOOLFALSE LPAREN functionArgs RPAREN          { let varloc_st = Parsing.rhs_start_pos 1 in
+                                                  let varloc_end = Parsing.rhs_end_pos 1 in
+                                                  let varloc = create_loc varloc_st varloc_end in
+                                                  let varexp = 
+                                                    Var { var_location = varloc;
+                                                          var_desc = SimpleVar "%f" } in
+                                                  let callexp = 
+                                                    { callExp_name = create_exp varloc varexp;
+                                                      callExp_args = Array.of_list $3} in
+                                                  let fcall_st = Parsing.rhs_start_pos 1 in
+                                                  let fcall_end = Parsing.rhs_end_pos 4 in
+                                                  let loc = create_loc fcall_st fcall_end in
+                                                  create_exp loc (CallExp callexp) }
 
 simpleFunctionCall :
 | ID LPAREN functionArgs RPAREN                 { let varloc_st = Parsing.rhs_start_pos 1 in
@@ -102,6 +130,7 @@ functionArgs :
 
 
 condition :
+| functionCall                                  { $1 }
 | variable                                      { $1 }
 
 /* IF THEN ELSE */
