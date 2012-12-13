@@ -161,12 +161,12 @@ SUFFIXES += .ml .mli .mll .mly .cmi .cmx
 .mll.ml:
 	$(OCAMLLEX) $<
 
-#.mly.ml:
-#	$(OCAMLYACC) $<
+.mly.ml:
+	$(OCAMLYACC) $<
 
 .mly.cmx:
 #	$(OCAMLYACC) $<
-#	$(OCAMLOPT) $(OPTFLAGS) -c $*.mli
+	$(OCAMLOPT) $(OPTFLAGS) -c $*.mli
 	$(OCAMLOPT) $(OPTFLAGS) -c $*.ml
 
 .mly.cmi:

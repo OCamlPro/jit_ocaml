@@ -43,6 +43,8 @@ rule token = parse
   | "else"                       { ELSE }
   | "elseif"                     { ELSEIF }
   | "end"                        { END }
+  | "while"                      { WHILE }
+  | "do"                         { DO }
   | comma                        { Printf.printf ","; COMMA }
   | semicolon                    { Printf.printf ";"; SEMI }
   | integer as inum              { let num = float_of_string inum in

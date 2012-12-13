@@ -23,7 +23,7 @@
 %}
 
 %token LBRACK RBRACK LPAREN RPAREN LBRACE RBRACE DOLLAR SPACES
-%token COMMA EOL DOLLAR SEMI IF THEN ELSE ELSEIF END
+%token COMMA EOL DOLLAR SEMI IF THEN ELSE ELSEIF END WHILE DO COMMENT
 %token<float> VARINT
 %token<float> VARFLOAT
 %token<float> NUM
@@ -44,7 +44,7 @@ expressions :
                                                   Exp (create_exp loc seqexp)}
 
 expression :
-/*| whileControl                                  { $1 }*/
+| whileControl                                  { $1 }
 | ifControl                                     { $1 }
 | variable                                      { $1 }
 
@@ -173,8 +173,43 @@ elseIfControl :
                                                           (SeqExp [create_exp loc ifexp]) }
 
 /* WHILE */
+whileControl :
+| WHILE condition whileConditionBreak whileBody END   { let wexp = 
+                                                          WhileExp 
+                                                            { whileExp_test = $2;
+                                                              whileExp_body = $4 } in
+                                                        let off_st = Parsing.rhs_start_pos 1 in
+                                                        let off_end = Parsing.rhs_end_pos 5 in
+                                                        let loc = create_loc off_st off_end in
+                                                        create_exp loc (ControlExp wexp) }
 
+whileBody :
+| /* Empty */           { let off_st = Parsing.rhs_start_pos 1 in
+                          let off_end = Parsing.rhs_end_pos 1 in
+                          let loc = 
+                            create_loc off_st off_end in
+                          create_exp loc (SeqExp []) }
+| expression            { $1 }
 
+whileConditionBreak :
+| COMMA                 { }
+| SEMI                  { }
+| DO                    { }
+| DO COMMA              { }
+| DO SEMI               { }
+| THEN                  { }
+| THEN COMMA            { }
+| THEN SEMI             { }
+| COMMENT EOL           { }
+| EOL                   { }
+| COMMA EOL             { }
+| SEMI EOL              { }
+| DO EOL                { }
+| DO COMMA EOL          { }
+| DO SEMI EOL           { }
+| THEN EOL              { }
+| THEN COMMA EOL        { }
+| THEN SEMI EOL         { }
     
     
     
