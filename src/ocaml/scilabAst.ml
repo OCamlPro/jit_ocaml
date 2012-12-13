@@ -1,15 +1,6 @@
 (* A direct translation of the class hierarchy of modules/ast/includes/ *)
 
 (* Questions: what are the Big... types ? *)
-(* TODO:
- * no node for:
- * ArrayListExp
- * ArrayListVar
- * AssignListExp (* TODO ? *)
- * CellCallExp   (* TODO ? *)
- * LogicalOpExp  (* TODO ? *)
-
-*)
 
 
 type location = {
@@ -93,6 +84,7 @@ and exp_info = {
 and exp_desc =
   AssignExp of assignExp
 | CallExp of callExp
+| CellCallExp of callExp
 | ConstExp of constExp
 | ControlExp of controlExp
 | Dec of dec
@@ -173,12 +165,15 @@ and controlExp =
 
 and selectExp = {
   selectExp_selectme : exp;
-  selectExp_cases : caseExp list;
+  selectExp_cases : caseExp array;
+  selectExp_default_location : Location.t;
   selectExp_default : seqExp;
 }
 
 and caseExp = {
+  caseExp_location : Location.t;
   caseExp_test : exp;
+  caseExp_body_location : Location.t;
   caseExp_body : seqExp;
 }
 
@@ -208,7 +203,9 @@ and returnExp = {
 }
 
 and tryCatchExp = {
+  tryCatchExp_tryme_location : Location.t;
   tryCatchExp_tryme : seqExp;
+  tryCatchExp_catchme_location : Location.t;
   tryCatchExp_catchme : seqExp;
 }
 
@@ -230,6 +227,7 @@ and listExp = {
 
 and mathExp =
 | MatrixExp of matrixExp
+| CellExp of matrixExp
 | MatrixLineExp of exp array
 | NotExp of notExp
 | OpExp of opExp_Oper * opExp_args
@@ -251,7 +249,7 @@ and notExp = {
 
 and opExp_args = {
   opExp_left : exp;
-  opExp_right : exp option;
+  opExp_right : exp;
   opExp_kind : opExp_Kind;
 }
 

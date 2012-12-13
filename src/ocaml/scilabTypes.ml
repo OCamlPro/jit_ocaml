@@ -75,6 +75,6 @@ type genericType = {
 (* A cell is an ArrayOf of InternalType/s *)
 
 (* The environment is defined in:
-   symbol/includes/context.hxx
-   symbol/src/cpp/context.cpp
+   modules/symbol/includes/context.hxx
+   modules/symbol/src/cpp/context.cpp
 *)

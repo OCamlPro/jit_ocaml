@@ -344,12 +344,39 @@ public :
     add_uint8(code);
   }
 
+  void add_TransposeExp_Kind(const ast::TransposeExp::Kind kind)
+  {
+    int code = 249;
+    switch(kind){
+    case ast::TransposeExp::_Conjugate_ : code = (1); break;
+    case ast::TransposeExp::_NonConjugate_: code = (2); break;
+    }
+    add_uint8(code);
+  }
+
+  void add_bool(bool b)
+  {
+    add_uint8(b);
+  }
 
   void add_varDec(const ast::VarDec* varDec)
   {
     add_Symbol(& varDec->name_get());
     add_VarDecKind(varDec->kind_get());
     add_exp(& varDec->init_get());
+  }
+    void add_MatrixExp(const MatrixExp *e){
+    int current_pos = get_pos();
+    int nitems = 0;
+    add_uint32(0);
+    std::list<MatrixLineExp *>::const_iterator it;
+    for(it = e->lines_get().begin() ; it != e->lines_get().end() ; it++)
+      {
+	add_location(& (*it)->location_get());
+	add_exps((*it)->columns_get());
+	nitems ++;
+      }
+    set_uint32(current_pos, nitems);
   }
 
   void visitprivate_SeqExp(const SeqExp *e){ /* done */
@@ -379,7 +406,7 @@ public :
   }
   void visitprivate_BoolExp(const BoolExp *e){ /* done */
     add_ast(7,e);
-    add_uint8(e->value_get());
+    add_bool(e->value_get());
   }
   void visitprivate_NilExp(const NilExp *e){ /* done */
     add_ast(8,e);
@@ -407,62 +434,90 @@ public :
     add_ast(14,e);
     add_IfExp_Kind(e->kind_get());
     bool has_else = e->has_else();
-    add_uint8(has_else);
+    add_bool(has_else);
     add_exp(& e->test_get());
     add_exp(& e->then_get());
     if( has_else ) add_exp(& e->else_get());
   }
   void visitprivate_TryCatchExp(const TryCatchExp *e){ /* done */
     add_ast(15,e);
+    add_location(& e->try_get().location_get());
+    add_location(& e->catch_get().location_get());
     add_exps(e->try_get().exps_get());
     add_exps(e->catch_get().exps_get());
   }
-  void visitprivate_WhileExp(const WhileExp *e){
+  void visitprivate_WhileExp(const WhileExp *e){ /* done */
     add_ast(16,e);
     add_exp(& e->test_get());
     add_exp(& e->body_get());
   }
-  void visitprivate_ForExp(const ForExp *e){
+  void visitprivate_ForExp(const ForExp *e){  /* done */
     add_ast(17,e);
     add_location(& e->vardec_get().location_get());
     add_varDec(& e->vardec_get());
     add_exp(& e->body_get());
   }
-  void visitprivate_BreakExp(const BreakExp *e){
+  void visitprivate_BreakExp(const BreakExp *e){ /* done */
     add_ast(18,e);
   }
-  void visitprivate_ContinueExp(const ContinueExp *e){
+  void visitprivate_ContinueExp(const ContinueExp *e){ /* done */
     add_ast(19,e);
   }
-  void visitprivate_ReturnExp(const ReturnExp *e){
+  void visitprivate_ReturnExp(const ReturnExp *e){ /* done */
     add_ast(20,e);
+    add_bool(e->is_global());
+    add_exp(& e->exp_get());
   }
   void visitprivate_SelectExp(const SelectExp *e){
     add_ast(21,e);
+    add_location(& e->default_case_get()->location_get());
+    add_exp(e->select_get());
+    add_exps(e->default_case_get()->exps_get());
+
+    int current_pos = get_pos();
+    int nitems = 0;
+    add_uint32(0);
+    cases_t::const_iterator it;
+    for(it = e->cases_get()->begin() ; it != e->cases_get()->end() ; it++)
+            {
+	      const ast::CaseExp *ce = *it;
+	      nitems ++;
+	      add_location(& ce->location_get() );
+	      add_location(& ce->body_get()->location_get() );
+	      add_exp( ce->test_get() );
+	      add_exps( ce->body_get()->exps_get() );
+            }
+    set_uint32(current_pos, nitems);
   }
-  void visitprivate_CaseExp(const CaseExp *e){
+  void visitprivate_CaseExp(const CaseExp *e){ /* SHOULD NEVER HAPPEN */
     add_ast(22,e);
   }
   void visitprivate_CellExp(const CellExp *e){ /* done */
     add_ast(23,e);
-    visitprivate_MatrixExp(e);
+    add_MatrixExp(e);
   }
-  void visitprivate_ArrayListExp(const ArrayListExp *e){
+  void visitprivate_ArrayListExp(const ArrayListExp *e){ /* done */
     add_ast(24,e);
+    add_exps(e->exps_get());
   }
-  void visitprivate_AssignListExp(const AssignListExp *e){
+  void visitprivate_AssignListExp(const AssignListExp *e){ /* done */
     add_ast(25,e);
+    add_exps(e->exps_get());
   }
-  void visitprivate_NotExp(const NotExp *e){
+  void visitprivate_NotExp(const NotExp *e){ /* done */
     add_ast(26,e);
+    add_exp(& e->exp_get() );
   }
-  void visitprivate_TransposeExp(const TransposeExp *e){
+  void visitprivate_TransposeExp(const TransposeExp *e){ /* done */
     add_ast(27,e);
+    add_TransposeExp_Kind(e->conjugate_get());
+    add_exp(& e->exp_get());
   }
   void visitprivate_VarDec(const VarDec *e){
     add_ast(28,e);
+    add_varDec(e);
   }
-  void visitprivate_FunctionDec(const FunctionDec *e){
+  void visitprivate_FunctionDec(const FunctionDec *e){ /* done */
     add_ast(29,e);
     add_Symbol(& e->name_get());    
     add_exp(& e->body_get());
@@ -471,8 +526,11 @@ public :
     add_location(& e->returns_get().location_get());
     add_vars(& e->returns_get());
   }
-  void visitprivate_ListExp(const ListExp *e){
+  void visitprivate_ListExp(const ListExp *e){ /* done */
     add_ast(30,e);
+    add_exp(& e->start_get() );
+    add_exp(& e->step_get() );
+    add_exp(& e->end_get() );
   }
   void visitprivate_AssignExp(const AssignExp *e){ /* TODO */
     add_ast(31,e);
@@ -497,28 +555,20 @@ public :
   void visitprivate_MatrixExp(const MatrixExp *e) /* done */
   {
     add_ast(34,e);
-    int current_pos = get_pos();
-    int nitems = 0;
-    add_uint32(0);
-    std::list<MatrixLineExp *>::const_iterator it;
-    for(it = e->lines_get().begin() ; it != e->lines_get().end() ; it++)
-      {
-	add_location(& (*it)->location_get());
-	add_exps((*it)->columns_get());
-	nitems ++;
-      }
-    set_uint32(current_pos, nitems);
+    add_MatrixExp(e);
   }
   void visitprivate_CallExp(const CallExp *e){ /* done */
     add_ast(35,e);
     add_exp(& e->name_get());
     add_exps(e->args_get());
   }
-  void visitprivate_MatrixLineExp(const MatrixLineExp *e){
+  void visitprivate_MatrixLineExp(const MatrixLineExp *e){ /* SHOULD NEVER HAPPEN */
     add_ast(36,e);
   }
-  void visitprivate_CellCallExp(const CellCallExp *e){
+  void visitprivate_CellCallExp(const CellCallExp *e){ /* done */
     add_ast(37,e);
+    add_exp(& e->name_get());
+    add_exps(e->args_get());
   }
 
 };

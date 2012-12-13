@@ -178,6 +178,16 @@ let get_VarDec_Kind s pos =
   in
   kind, pos
 
+let get_TransposeExp_Kind s pos =
+  let code, pos = get_uint8 s pos in
+  let kind =
+    match code with
+    | 1 -> Conjugate
+    | 2 -> NonConjugate
+    | _ -> failwith (Printf.sprintf "get_TransposeExp_Kind : unknown code %d" code)
+  in
+  kind, pos
+
 let get_double s pos =
   let d = jit_ocaml_get_double s pos in
   let pos = pos + 8 in
@@ -302,9 +312,13 @@ let rec get_exp s pos =
     })) info loc, pos
 
   | 15 ->
+    let tryCatchExp_tryme_location, pos = get_location s pos in
+    let tryCatchExp_catchme_location, pos = get_location s pos in
     let tryCatchExp_tryme, pos = get_exps s pos in
     let tryCatchExp_catchme, pos = get_exps s pos in
     mkexp (ControlExp (TryCatchExp {
+      tryCatchExp_tryme_location;
+      tryCatchExp_catchme_location;
       tryCatchExp_tryme; tryCatchExp_catchme })) info loc, pos
 
   | 16 ->
@@ -320,6 +334,55 @@ let rec get_exp s pos =
     mkexp (ControlExp (ForExp {
       forExp_vardec_location;
       forExp_vardec; forExp_body })) info loc, pos
+
+  | 18 ->
+    mkexp (ControlExp BreakExp) info loc, pos
+
+  | 19 ->
+    mkexp (ControlExp ContinueExp) info loc, pos
+
+  | 20 ->
+    let returnExp_is_global, pos = get_bool s pos in
+    let returnExp_exp, pos = get_exp s pos in
+    mkexp (ControlExp (ReturnExp {
+      returnExp_exp; returnExp_is_global
+    })) info loc, pos
+
+  | 21 ->
+    let selectExp_default_location, pos = get_location s pos in
+    let selectExp_selectme, pos = get_exp s pos in
+    let selectExp_default, pos = get_exps s pos in
+    let selectExp_cases, pos = get_cases s pos in
+    mkexp (ControlExp (SelectExp {
+      selectExp_default; selectExp_default_location;
+      selectExp_selectme; selectExp_cases })) info loc, pos
+
+  | 23 ->
+    let matrixExp_lines, pos = get_matrixLines s pos in
+    mkexp (MathExp (CellExp { matrixExp_lines })) info loc, pos
+
+  | 24 ->
+    let exps, pos = get_exps s pos in
+    let exps = Array.of_list exps in
+    mkexp (ArrayListExp exps) info loc, pos
+
+  | 25 ->
+    let exps, pos = get_exps s pos in
+    let exps = Array.of_list exps in
+    mkexp (AssignListExp exps) info loc, pos
+
+  | 26 ->
+    let notExp_exp, pos = get_exp s pos in
+    mkexp (MathExp (NotExp { notExp_exp })) info loc, pos
+
+  | 27 ->
+    let transposeExp_conjugate, pos = get_TransposeExp_Kind s pos in
+    let transposeExp_exp, pos = get_exp s pos in
+    mkexp (MathExp (TransposeExp {
+      transposeExp_exp; transposeExp_conjugate })) info loc, pos
+  | 28 ->
+    let vardec, pos = get_varDec s pos in
+    mkexp (Dec (VarDec vardec)) info loc, pos
 
   | 29 ->
     let functionDec_symbol, pos = get_wstring s pos in
@@ -341,6 +404,13 @@ let rec get_exp s pos =
       functionDec_body; functionDec_args; functionDec_returns;
     })) info loc, pos
 
+  | 30 ->
+    let listExp_start, pos = get_exp s pos in
+    let listExp_step, pos = get_exp s pos in
+    let listExp_end, pos = get_exp s pos in
+    mkexp (ListExp {
+      listExp_start; listExp_step; listExp_end }) info loc, pos
+
   | 31 ->
     let assignExp_left_exp, pos = get_exp s pos in
     let assignExp_right_exp, pos = get_exp s pos in
@@ -353,7 +423,6 @@ let rec get_exp s pos =
     let opExp_oper, pos = get_OpExp_Oper s pos in
     let opExp_left, pos = get_exp s pos in
     let opExp_right, pos =get_exp s pos in
-    let opExp_right = Some opExp_right in (* TODO, why an option ? *)
     mkexp (MathExp (OpExp (opExp_oper,
       {
         opExp_right; opExp_left; opExp_kind
@@ -364,7 +433,6 @@ let rec get_exp s pos =
     let opExp_oper, pos = get_LogicalOpExp_Oper s pos in
     let opExp_left, pos = get_exp s pos in
     let opExp_right, pos =get_exp s pos in
-    let opExp_right = Some opExp_right in (* TODO, why an option ? *)
     mkexp (MathExp (LogicalOpExp (opExp_oper,
       {
         opExp_right; opExp_left; opExp_kind
@@ -379,6 +447,14 @@ let rec get_exp s pos =
     let callExp_args, pos = get_exps s pos in
     let callExp_args = Array.of_list callExp_args in
     mkexp (CallExp {
+      callExp_name; callExp_args
+    }) info loc, pos
+
+  | 37 ->
+    let callExp_name, pos = get_exp s pos in
+    let callExp_args, pos = get_exps s pos in
+    let callExp_args = Array.of_list callExp_args in
+    mkexp (CellCallExp {
       callExp_name; callExp_args
     }) info loc, pos
 
@@ -418,6 +494,23 @@ and get_matrixLines s pos =
         matrixLineExp_columns = Array.of_list exps;
       } in
       iter (nitems-1) s pos (item :: ritems)
+    else (Array.of_list (List.rev ritems), pos)
+  in
+  iter nitems s pos []
+
+and get_cases s pos =
+  if !return_dummyExp then [||], pos else
+  let nitems, pos = get_uint32 s pos in
+  let rec iter nitems s pos ritems =
+    if nitems > 0 then
+      let caseExp_location, pos = get_location s pos in
+      let caseExp_body_location, pos = get_location s pos in
+      let caseExp_test, pos = get_exp s pos in
+      let caseExp_body, pos = get_exps s pos in
+      let case = {
+        caseExp_location; caseExp_body_location;
+        caseExp_body; caseExp_test } in
+      iter (nitems-1) s pos (case :: ritems)
     else (Array.of_list (List.rev ritems), pos)
   in
   iter nitems s pos []
