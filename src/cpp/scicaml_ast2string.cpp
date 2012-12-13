@@ -520,10 +520,10 @@ public :
   void visitprivate_FunctionDec(const FunctionDec *e){ /* done */
     add_ast(29,e);
     add_Symbol(& e->name_get());    
-    add_exp(& e->body_get());
     add_location(& e->args_get().location_get());
-    add_vars(& e->args_get());
     add_location(& e->returns_get().location_get());
+    add_exp(& e->body_get());
+    add_vars(& e->args_get());
     add_vars(& e->returns_get());
   }
   void visitprivate_ListExp(const ListExp *e){ /* done */

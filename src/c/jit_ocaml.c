@@ -39,3 +39,13 @@ value jit_ocaml_get_double_c(value s_v, value pos_v)
   int pos = Int_val(pos_v);
   return caml_copy_double( *(double*)(s+pos) );
 }
+
+value jit_ocaml_set_double_c(value s_v, value pos_v, value d_v)
+{
+  char *s = (char*)s_v;
+  int pos = Int_val(pos_v);
+  double d = Double_val(d_v);
+
+  *(double*)(s+pos) = d;
+  return Val_unit;
+}

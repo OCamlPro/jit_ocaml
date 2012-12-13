@@ -1,7 +1,5 @@
 open ScilabAst
 
-external jit_ocaml_get_double : string -> int -> float = "jit_ocaml_get_double_c"
-
 let get_uint8 s pos =
   int_of_char (String.unsafe_get s pos), pos+1
 
@@ -188,26 +186,13 @@ let get_TransposeExp_Kind s pos =
   in
   kind, pos
 
+
+external jit_ocaml_get_double : string -> int -> float =
+    "jit_ocaml_get_double_c"
 let get_double s pos =
   let d = jit_ocaml_get_double s pos in
   let pos = pos + 8 in
   d, pos
-
-let dummy_info = {
-  is_verbose = false;
-  is_break = false;
-  is_breakable = false;
-  is_return = false;
-  is_returnable = false;
-  is_continue = false;
-  is_continuable = false;
-}
-let dummy_loc = {
-  first_line = 0;
-  first_column = 0;
-  last_line = 0;
-  last_column = 0;
-}
 
 let dummyExp = mkexp (SeqExp []) dummy_info dummy_loc
 
@@ -385,16 +370,16 @@ let rec get_exp s pos =
     mkexp (Dec (VarDec vardec)) info loc, pos
 
   | 29 ->
-    let functionDec_symbol, pos = get_wstring s pos in
-    let functionDec_body, pos = get_exp s pos in
+    let functionDec_symbol, pos = get_Symbol s pos in
     let args_loc, pos = get_location s pos in
+    let returns_loc, pos = get_location s pos in
+    let functionDec_body, pos = get_exp s pos in
     let args, pos = get_vars s pos in
+    let returns, pos = get_vars s pos in
     let functionDec_args = {
       arrayListVar_location = args_loc;
       arrayListVar_vars = args;
     } in
-    let returns_loc, pos = get_location s pos in
-    let returns, pos = get_vars s pos in
     let functionDec_returns = {
       arrayListVar_location = returns_loc;
       arrayListVar_vars = returns;

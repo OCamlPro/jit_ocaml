@@ -263,12 +263,14 @@ let rec print_exp buf indent ast =
       | CellExp exp ->
         print_MatrixExp buf indent "CellExp" exp
 
+(*
       | MatrixLineExp exps ->
         Printf.bprintf buf "%sMatrixLineExp\n" indent;
         let indent2 = indent ^ "  " in
         Array.iter (fun exp ->
           print_exp buf indent2 exp;
         ) exps
+*)
 
       | NotExp { notExp_exp } ->
         Printf.bprintf buf "%sNotExp\n" indent;

@@ -83,9 +83,11 @@ OCAML_AST_MLIS = \
 
 OCAML_SCILAB_MLS = \
 	src/ocaml/scilabString2Ast.ml \
+	src/ocaml/scilabAst2String.ml \
 	src/ocaml/scilabCallbacks.ml
 OCAML_SCILAB_MLIS = \
 	src/ocaml/scilabString2Ast.mli \
+	src/ocaml/scilabAst2String.mli \
 	src/ocaml/scilabCallbacks.mli
 
 OCAML_MLS = \
@@ -110,7 +112,6 @@ CLEANFILES= \
 	$(OCAML_OBJS)  \
 	jit_ocaml.o \
 	libasmrun.a
-	
 
 libscijit_ocaml-runtime.o: $(OCAML_CMXS) jit_ocaml.o libasmrun.a
 	$(OCAMLOPT) -o libscijit_ocaml-runtime.o -output-obj $(OCAML_CMXS)

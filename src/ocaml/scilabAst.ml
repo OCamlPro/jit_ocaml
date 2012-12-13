@@ -228,7 +228,7 @@ and listExp = {
 and mathExp =
 | MatrixExp of matrixExp
 | CellExp of matrixExp
-| MatrixLineExp of exp array
+(* | MatrixLineExp of exp array *)
 | NotExp of notExp
 | OpExp of opExp_Oper * opExp_args
 | LogicalOpExp of opLogicalExp_Oper * opExp_args
@@ -406,3 +406,21 @@ in run_MatrixExp.hxx
 in run_CallExp.hxx
     void visitprivate(const CallExp &e)
 *)
+
+
+
+let dummy_info = {
+  is_verbose = false;
+  is_break = false;
+  is_breakable = false;
+  is_return = false;
+  is_returnable = false;
+  is_continue = false;
+  is_continuable = false;
+}
+let dummy_loc = {
+  first_line = 0;
+  first_column = 0;
+  last_line = 0;
+  last_column = 0;
+}
