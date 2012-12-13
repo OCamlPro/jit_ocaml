@@ -23,10 +23,13 @@
 %}
 
 %token LBRACK RBRACK LPAREN RPAREN LBRACE RBRACE DOLLAR SPACES
-%token COMMA EOL DOLLAR SEMI IF THEN ELSE ELSEIF END WHILE DO COMMENT
+%token COMMA EOL DOLLAR SEMI IF THEN ELSE ELSEIF END WHILE DO 
+%token COLON ASSIGN
+%token ID COMMENT
 %token<float> VARINT
 %token<float> VARFLOAT
 %token<float> NUM
+%token<string> ID
 %token EOF
 
 %start program
@@ -41,12 +44,61 @@ expressions :
                                                   let off_st = Parsing.rhs_start_pos 1 in
                                                   let off_end = Parsing.rhs_end_pos 1 in
                                                   let loc = create_loc off_st off_end in
-                                                  Exp (create_exp loc seqexp)}
+                                                  Exp (create_exp loc seqexp) }
 
 expression :
+| functionCall                                  { $1 }
 | whileControl                                  { $1 }
 | ifControl                                     { $1 }
 | variable                                      { $1 }
+
+/* FUNCTIONCALL */
+functionCall :
+| simpleFunctionCall                            { $1 }
+/* | specificFunctionCall                          { $1 } */
+| LPAREN functionCall RPAREN                    { $2 }
+
+simpleFunctionCall :
+| ID LPAREN functionArgs RPAREN                 { let varloc_st = Parsing.rhs_start_pos 1 in
+                                                  let varloc_end = Parsing.rhs_end_pos 1 in
+                                                  let varloc = create_loc varloc_st varloc_end in
+                                                  let varexp = 
+                                                    Var { var_location = varloc;
+                                                          var_desc = SimpleVar $1 } in
+                                                  let callexp = 
+                                                    { callExp_name = create_exp varloc varexp;
+                                                      callExp_args = Array.of_list $3} in
+                                                  let fcall_st = Parsing.rhs_start_pos 1 in
+                                                  let fcall_end = Parsing.rhs_end_pos 4 in
+                                                  let loc = create_loc fcall_st fcall_end in
+                                                  create_exp loc (CallExp callexp) }
+/*| ID LBRACE functionArgs RPAREN */
+
+functionArgs :
+| variable                                      { [$1] }
+| functionCall                                  { [$1] }
+| COLON                                         { let cvarloc_st = Parsing.rhs_start_pos 1 in
+                                                  let cvarloc_end = Parsing.rhs_end_pos 1 in
+                                                  let loc = create_loc cvarloc_st cvarloc_end in
+                                                  let cvar_exp = 
+                                                    Var { var_location = loc;
+                                                          var_desc = ColonVar } in 
+                                                  [ create_exp loc cvar_exp ]}
+| variableDeclaration                           { [$1] }
+| /* Empty */                                   { [] }
+| functionArgs COMMA variable                   { $3::$1 }
+| functionArgs COMMA functionCall               { $3::$1 }
+| functionArgs COMMA COLON                      { let cvarloc_st = Parsing.rhs_start_pos 3 in
+                                                  let cvarloc_end = Parsing.rhs_end_pos 3 in
+                                                  let loc = create_loc cvarloc_st cvarloc_end in
+                                                  let cvar_exp_desc = 
+                                                    Var { var_location = loc;
+                                                          var_desc = ColonVar } in 
+                                                  let cvar_exp = 
+                                                    create_exp loc cvar_exp_desc in
+                                                cvar_exp::$1 }
+| functionArgs COMMA variableDeclaration       { $3::$1 } 
+| functionArgs COMMA                           { $1 }
 
 
 condition :
@@ -349,6 +401,26 @@ matrixOrCellColumnsBreak :
 | matrixOrCellColumnsBreak COMMA				{  }
 | COMMA								{  }
 
+
+/* VARAIABLE DECLARATION */
+variableDeclaration :
+| assignable ASSIGN variable                                    { let assignexp = 
+                                                                    AssignExp {assignExp_left_exp = $1;
+                                                                               assignExp_right_exp = $3 } in
+                                                                  let off_st = Parsing.rhs_start_pos 1 in
+                                                                  let off_end = Parsing.rhs_end_pos 3 in
+                                                                  let loc = create_loc off_st off_end in
+                                                                  create_exp loc assignexp}
+
+
+assignable :
+| ID                                                            { let varloc_st = Parsing.rhs_start_pos 1 in
+                                                                  let varloc_end = Parsing.rhs_end_pos 1 in
+                                                                  let varloc = create_loc varloc_st varloc_end in
+                                                                  let varexp = 
+                                                                    Var { var_location = varloc;
+                                                                          var_desc = SimpleVar $1 } in 
+                                                                  create_exp varloc varexp}
 
 /*
 
