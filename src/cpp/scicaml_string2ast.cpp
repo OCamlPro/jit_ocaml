@@ -13,8 +13,8 @@
 #include <stdlib.h>
 #include "jit_ocaml.hxx"
 
-#include <seqexp.hxx>
-#include <stringexp.hxx>
+#include <all.hxx>
+#include <commentexp.hxx>
 
 extern ast::Exp* ast_saved;
 
@@ -97,8 +97,151 @@ static ast::Exp* get_exp(void)
     exp = new ast::StringExp(*loc, *s);
     break;
   }
+  case 3: {
+    std::wstring* s = get_wstring();
+    exp = new ast::CommentExp(*loc, s);
+    break;
+  }
+    /*
+  case 4: {
+    exp = new ast::IntExp(*loc);
+    break;
+  }
+  case 5: {
+    exp = new ast::FloatExp(*loc);
+    break;
+  }
+  case 6: {
+    exp = new ast::DoubleExp(*loc);
+    break;
+  }
+  case 7: {
+    exp = new ast::BoolExp(*loc);
+    break;
+  }
+  case 8: {
+    exp = new ast::NilExp(*loc);
+    break;
+  }
+  case 9: {
+    exp = new ast::SimpleVar(*loc);
+    break;
+  }
+  case 10: {
+    exp = new ast::ColonVar(*loc);
+    break;
+  }
+  case 11: {
+    exp = new ast::DollarVar(*loc);
+    break;
+  }
+  case 12: {
+    exp = new ast::ArrayListVar(*loc);
+    break;
+  }
+  case 13: {
+    exp = new ast::FieldExp(*loc);
+    break;
+  }
+  case 14: {
+    exp = new ast::IfExp(*loc);
+    break;
+  }
+  case 15: {
+    exp = new ast::TryCatchExp(*loc);
+    break;
+  }
+  case 16: {
+    exp = new ast::WhileExp(*loc);
+    break;
+  }
+  case 17: {
+    exp = new ast::ForExp(*loc);
+    break;
+  }
+  case 18: {
+    exp = new ast::BreakExp(*loc);
+    break;
+  }
+  case 19: {
+    exp = new ast::ContinueExp(*loc);
+    break;
+  }
+  case 20: {
+    exp = new ast::ReturnExp(*loc);
+    break;
+  }
+  case 21: {
+    exp = new ast::SelectExp(*loc);
+    break;
+  }
+  case 22: {
+    exp = new ast::CaseExp(*loc);
+    break;
+  }
+  case 23: {
+    exp = new ast::CellExp(*loc);
+    break;
+  }
+  case 24: {
+    exp = new ast::ArrayListExp(*loc);
+    break;
+  }
+  case 25: {
+    exp = new ast::AssignListExp(*loc);
+    break;
+  }
+  case 26: {
+    exp = new ast::NotExp(*loc);
+    break;
+  }
+  case 27: {
+    exp = new ast::TransposeExp(*loc);
+    break;
+  }
+  case 28: {
+    exp = new ast::VarDec(*loc);
+    break;
+  }
+  case 29: {
+    exp = new ast::FunctionDec(*loc);
+    break;
+  }
+  case 30: {
+    exp = new ast::ListExp(*loc);
+    break;
+  }
+  case 31: {
+    exp = new ast::AssignExp(*loc);
+    break;
+  }
+  case 32: {
+    exp = new ast::OpExp(*loc);
+    break;
+  }
+  case 33: {
+    exp = new ast::LogicalExp(*loc);
+    break;
+  }
+  case 34: {
+    exp = new ast::MatrixExp(*loc);
+    break;
+  }
+  case 35: {
+    exp = new ast::CallExp(*loc);
+    break;
+  }
+  case 36: {
+    exp = new ast::MatrixLineExp(*loc);
+    break;
+  }
+  case 37: {
+    exp = new ast::CallCallExp(*loc);
+    break;
+  }
+*/
   default: 
-    std::cerr << "Unkown code " << code << std::endl;
+    std::cerr << "Unknown code " << code << std::endl;
     exit(2);
   }
 
@@ -116,10 +259,11 @@ static ast::Exp* get_exp(void)
 ast::Exp* scicaml_string2ast(char *buffer)
 {
   std::cerr << "scicaml_string2ast" << std::endl;
+  /*
   buf = buffer;
   int buflen = get_uint32();
   ast::Exp* new_ast = get_exp();
-
+  */
   ast::Exp* ast = ast_saved;
   ast_saved = NULL;
   return ast;
