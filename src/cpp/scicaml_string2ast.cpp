@@ -39,7 +39,7 @@ static bool get_bool(void)
   return *buf++;
 }
 
-Location *get_loc(void)
+Location *get_location(void)
 {
   Location *loc = new Location();
   loc->first_line = get_uint8();
@@ -62,6 +62,41 @@ static std::list<ast::Exp*> get_exp_list(void)
   return *list;
 }
 
+static std::list<ast::Var*> get_vars(void)
+{
+  int nitems = get_uint32();
+  std::list<ast::Var*> *list = new  std::list<ast::Var*>;
+  for(int i = 0; i < nitems; i++){
+    ast::Var* var = dynamic_cast<ast::Var*>(get_exp());
+    list->push_back(var);
+  }
+  return *list;
+}
+
+static ast::IntExp::Prec get_IntExp_Prec(void)
+{
+  int code = get_uint32();
+  switch(code){
+  case 1: return ast::IntExp::_8_;
+  case 2: return ast::IntExp::_16_;
+  case 3: return ast::IntExp::_32_;
+  case 4: return ast::IntExp::_64_;
+  }
+  std::cerr << "Unknown get_IntExp_Prec code " << code << std::endl;
+  exit(2);
+}
+
+static ast::IfExp::Kind get_IfExp_Kind(void)
+{
+  int code = get_uint32();
+  switch(code){
+  case 1 : return ast::IfExp::invalid_kind ;
+  case 2 : return ast::IfExp::instruction_kind;
+  case 3 : return ast::IfExp::expression_kind;
+  }
+  std::cerr << "Unknown get_IfExp_Kind code " << code << std::endl;
+  exit(2);
+}
 
 static std::wstring* get_wstring(void)
 {
@@ -72,11 +107,24 @@ static std::wstring* get_wstring(void)
   return s;
 }
 
+static symbol::Symbol* get_Symbol(void)
+{
+  std::wstring* s = get_wstring();
+  return new symbol::Symbol(*s);
+}
+
+static double get_double(void)
+{
+  double d = *(double*)buf;
+  buf += 8;
+  return d;
+}
+
 static ast::Exp* get_exp(void)
 {
   ast::Exp* exp;
   int code = get_uint8();
-  Location *loc = get_loc();
+  Location *loc = get_location();
   int is_verbose = get_bool();
   int is_break = get_bool();
   int is_breakable = get_bool();
@@ -102,21 +150,25 @@ static ast::Exp* get_exp(void)
     exp = new ast::CommentExp(*loc, s);
     break;
   }
-    /*
   case 4: {
-    exp = new ast::IntExp(*loc);
+    ast::IntExp::Prec prec = get_IntExp_Prec();
+    int value = get_uint32();
+    exp = new ast::IntExp(*loc, prec, value);
     break;
   }
   case 5: {
-    exp = new ast::FloatExp(*loc);
+    double d = get_double();
+    exp = new ast::FloatExp(*loc, d);
     break;
   }
   case 6: {
-    exp = new ast::DoubleExp(*loc);
+    double d = get_double();
+    exp = new ast::DoubleExp(*loc,d);
     break;
   }
   case 7: {
-    exp = new ast::BoolExp(*loc);
+    bool b = get_bool();
+    exp = new ast::BoolExp(*loc, b);
     break;
   }
   case 8: {
@@ -124,7 +176,8 @@ static ast::Exp* get_exp(void)
     break;
   }
   case 9: {
-    exp = new ast::SimpleVar(*loc);
+    symbol::Symbol *name = get_Symbol();
+    exp = new ast::SimpleVar(*loc, *name);
     break;
   }
   case 10: {
@@ -136,21 +189,40 @@ static ast::Exp* get_exp(void)
     break;
   }
   case 12: {
-    exp = new ast::ArrayListVar(*loc);
+    std::list<ast::Var*> vars = get_vars();
+    exp = new ast::ArrayListVar(*loc, vars);
     break;
   }
   case 13: {
-    exp = new ast::FieldExp(*loc);
+    ast::Exp *head = get_exp();
+    ast::Exp *tail = get_exp();
+    exp = new ast::FieldExp(*loc, *head, *tail);
     break;
   }
   case 14: {
-    exp = new ast::IfExp(*loc);
+    ast::IfExp::Kind kind = get_IfExp_Kind();
+    bool has_else = get_bool();
+    ast::Exp* test = get_exp();
+    ast::Exp* _then = get_exp();
+    if( has_else ){
+      ast::Exp* _else = get_exp();
+      exp = new ast::IfExp(*loc, *test, *_then, *_else);
+    } else {
+      exp = new ast::IfExp(*loc, *test, *_then);
+    }
     break;
   }
   case 15: {
-    exp = new ast::TryCatchExp(*loc);
+    Location *try_location = get_location();
+    Location *catch_location = get_location();
+    std::list<ast::Exp *> try_exps = get_exp_list();
+    std::list<ast::Exp *> catch_exps = get_exp_list();
+    ast::SeqExp *_try = new ast::SeqExp(*try_location, try_exps);
+    ast::SeqExp *_catch = new ast::SeqExp(*catch_location, catch_exps);
+    exp = new ast::TryCatchExp(*loc, *_try, *_catch);
     break;
   }
+    /*
   case 16: {
     exp = new ast::WhileExp(*loc);
     break;
