@@ -1,1 +1,0 @@
-for (iterator = 1) do disp(2) end
