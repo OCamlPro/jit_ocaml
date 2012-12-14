@@ -24,13 +24,17 @@
 
 %token LBRACK RBRACK LPAREN RPAREN LBRACE RBRACE DOLLAR SPACES
 %token COMMA EOL DOLLAR SEMI IF THEN ELSE ELSEIF END WHILE DO 
-%token COLON ASSIGN ID
+%token COLON ASSIGN ID FOR
 %token COMMENT BOOLTRUE BOOLFALSE
 %token<float> VARINT
 %token<float> VARFLOAT
 %token<float> NUM
 %token<string> ID
 %token EOF
+
+%nonassoc FUNCTIONCALL
+%nonassoc BOOLTRUE BOOLFALSE
+%nonassoc LPAREN LBRACE
 
 %start program
 %type <ScilabAst.ast>program
@@ -49,8 +53,10 @@ expressions :
 expression :
 | functionCall                                  { $1 }
 | variableDeclaration                           { $1 }
-| whileControl                                  { $1 }
 | ifControl                                     { $1 }
+| forControl                                    { $1 }
+| whileControl                                  { $1 }
+
 | variable                                      { $1 }
 
 /* FUNCTIONCALL */
@@ -253,6 +259,62 @@ elseIfControl :
                                                           create_loc off_st off_end in
                                                         create_exp loc 
                                                           (SeqExp [create_exp loc ifexp]) }
+/* FOR */
+forControl :
+| FOR ID ASSIGN forIterator forConditionBreak forBody END               { let vardec_st = Parsing.rhs_start_pos 2 in
+                                                                          let vardec_end = Parsing.rhs_end_pos 2 in
+                                                                          let vardec_loc = create_loc vardec_st vardec_end in
+                                                                          let vardec_desc = 
+                                                                            { varDec_name = $2;
+                                                                              varDec_init = $4;
+                                                                              varDec_kind = VarDec_invalid_kind} in
+                                                                          let forexp = ForExp
+                                                                            { forExp_vardec_location = vardec_loc;
+                                                                              forExp_vardec = vardec_desc;
+                                                                              forExp_body = $6 } in
+                                                                          let off_st = Parsing.rhs_start_pos 1 in
+                                                                          let off_end = Parsing.rhs_end_pos 7 in
+                                                                          let loc = 
+                                                                            create_loc off_st off_end in
+                                                                          create_exp loc (ControlExp forexp) }
+| FOR LPAREN ID ASSIGN forIterator RPAREN forConditionBreak forBody END { let vardec_st = Parsing.rhs_start_pos 3 in
+                                                                          let vardec_end = Parsing.rhs_end_pos 3 in
+                                                                          let vardec_loc = create_loc vardec_st vardec_end in
+                                                                          let vardec_desc = 
+                                                                            { varDec_name = $3;
+                                                                              varDec_init = $5;
+                                                                              varDec_kind = VarDec_invalid_kind} in
+                                                                          let forexp = ForExp
+                                                                            { forExp_vardec_location = vardec_loc;
+                                                                              forExp_vardec = vardec_desc;
+                                                                              forExp_body = $8 } in
+                                                                          let off_st = Parsing.rhs_start_pos 1 in
+                                                                          let off_end = Parsing.rhs_end_pos 9 in
+                                                                          let loc = 
+                                                                            create_loc off_st off_end in
+                                                                          create_exp loc (ControlExp forexp)}
+
+forIterator :
+| functionCall                                  { $1 }
+| variable                                      { $1 }
+
+forConditionBreak :
+| EOL						{ }
+| SEMI						{ }
+| SEMI EOL					{ }
+| COMMA						{ }
+| COMMA EOL					{ }
+| DO						{ }
+| DO EOL					{ }
+| /* Empty */					{ }
+
+forBody :
+| expression                                    { $1 }
+| /* Empty */                                   { let off_st = Parsing.rhs_start_pos 1 in
+                                                  let off_end = Parsing.rhs_end_pos 1 in
+                                                  let loc = 
+                                                    create_loc off_st off_end in
+                                                  create_exp loc (SeqExp []) }
 
 /* WHILE */
 whileControl :

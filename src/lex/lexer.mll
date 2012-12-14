@@ -67,7 +67,8 @@ rule token = parse
   | "end"                        { END }
   | "while"                      { WHILE }
   | "do"                         { DO }
-  | "assign"                     { ASSIGN }
+  | "="                          {  Printf.printf "=";ASSIGN }
+  | "for"                        { Printf.printf "FOR "; FOR }
   | comma                        { Printf.printf ","; COMMA }
   | semicolon                    { Printf.printf ";"; SEMI }
   | integer as inum              { let num = float_of_string inum in
@@ -85,7 +86,7 @@ rule token = parse
   | dollar                       { DOLLAR }
   | booltrue                     { BOOLTRUE }
   | boolfalse                    { BOOLFALSE }
-  | id as str                    { Printf.printf "ID = %s" str;ID str }
+  | id as str                    { Printf.printf "ID[%s] \n" str;ID str }     
   | eof                          { exit 0 }
       
 
