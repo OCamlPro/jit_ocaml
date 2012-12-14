@@ -32,9 +32,32 @@
 %token<string> ID
 %token EOF
 
+%nonassoc TOPLEVEL
+%nonassoc HIGHLEVEL
+%nonassoc UPLEVEL
+%nonassoc LISTABLE
+
+%nonassoc CONTROLBREAK
+
+%left OR OROR
+%left AND ANDAND
+
+%left COLON
+%left EQ NE LT LE GT GE
+%left MINUS PLUS
+%left TIMES DOTTIMES KRONTIMES CONTROLTIMES RDIVIDE DOTRDIVIDE KRONRDIVIDE CONTROLRDIVIDE LDIVIDE DOTLDIVIDE KRONLDIVIDE CONTROLLDIVIDE
+%left POWER DOTPOWER
+
+%left QUOTE DOTQUOTE
+
+%left DOT
+
+%left NOT
+
 %nonassoc FUNCTIONCALL
 %nonassoc BOOLTRUE BOOLFALSE
 %nonassoc LPAREN LBRACE
+
 
 %start program
 %type <ScilabAst.ast>program
@@ -42,6 +65,7 @@
 %%
 program :
 | expressions                                   { $1 }
+| expressions EOF                               { $1 }
 
 expressions :
 | expression                                    { let seqexp = SeqExp [$1] in
@@ -56,7 +80,6 @@ expression :
 | ifControl                                     { $1 }
 | forControl                                    { $1 }
 | whileControl                                  { $1 }
-
 | variable                                      { $1 }
 
 /* FUNCTIONCALL */
@@ -137,8 +160,8 @@ functionArgs :
 
 
 condition :
-| functionCall                                  { $1 }
-| variable                                      { $1 }
+| functionCall 	%prec HIGHLEVEL                 { $1 }
+| variable      %prec HIGHLEVEL                 { $1 }
 
 /* IF THEN ELSE */
 
@@ -359,21 +382,27 @@ whileConditionBreak :
     
 variable :
 | matrix                                        { $1 }
-| VARINT                                        { let doubleexp =
+| VARINT %prec LISTABLE                         { let doubleexp =
                                                     DoubleExp { doubleExp_value = $1;
                                                                 doubleExp_bigDouble = ()} in
                                                   let off_st = Parsing.rhs_start_pos 1 in
                                                   let off_end = Parsing.rhs_end_pos 1 in
                                                   let loc = create_loc off_st off_end in
                                                   create_exp loc (ConstExp doubleexp)}
-| NUM                                           { let doubleexp =
+| NUM %prec LISTABLE                            { let doubleexp =
                                                     DoubleExp { doubleExp_value = $1;
                                                                 doubleExp_bigDouble = ()} in
                                                   let off_st = Parsing.rhs_start_pos 1 in
                                                   let off_end = Parsing.rhs_end_pos 1 in
                                                   let loc = create_loc off_st off_end in
                                                   create_exp loc (ConstExp doubleexp)} 
-
+| ID %prec LISTABLE                           { let varloc_st = Parsing.rhs_start_pos 1 in
+                                                  let varloc_end = Parsing.rhs_end_pos 1 in
+                                                  let varloc = create_loc varloc_st varloc_end in
+                                                  let varexp = 
+                                                    Var { var_location = varloc;
+                                                          var_desc = SimpleVar $1 } in 
+                                                  create_exp varloc varexp }
 
 
 /* Matrix */
@@ -514,7 +543,7 @@ variableDeclaration :
 
 
 assignable :
-| ID                                                            { let varloc_st = Parsing.rhs_start_pos 1 in
+| ID %prec LISTABLE                                             { let varloc_st = Parsing.rhs_start_pos 1 in
                                                                   let varloc_end = Parsing.rhs_end_pos 1 in
                                                                   let varloc = create_loc varloc_st varloc_end in
                                                                   let varexp = 

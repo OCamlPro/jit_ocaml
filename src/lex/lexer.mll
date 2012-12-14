@@ -8,6 +8,7 @@
       pos_lnum = lexbuf.lex_curr_p.pos_lnum + 1;
       pos_bol =  lexbuf.lex_curr_p.pos_cnum;
     }
+
 }
 
 let newline = ('\010' | '\013' | "\013\010")
@@ -70,16 +71,15 @@ rule token = parse
   | "end"                        { END }
   | "while"                      { WHILE }
   | "do"                         { DO }
-  | "="                          {  Printf.printf "=";ASSIGN }
-  | "for"                        { Printf.printf "FOR "; FOR }
-  | comma                        { Printf.printf ","; COMMA }
-  | semicolon                    { Printf.printf ";"; SEMI }
+  | "="                          { ASSIGN }
+  | "for"                        { FOR }
+  | comma                        { COMMA }
+  | semicolon                    { SEMI }
   | integer as inum              { let num = float_of_string inum in
                                    VARINT num }
   | number as nnum               { let num = float_of_string nnum in
                                    NUM num }
   | little as lnum               { let num = float_of_string lnum in
-                                   Printf.printf "%f" num;
                                    NUM num }
   | lparen                       { LPAREN }
   | rparen                       { RPAREN }    
@@ -88,8 +88,9 @@ rule token = parse
   | dollar                       { DOLLAR }
   | booltrue                     { BOOLTRUE }
   | boolfalse                    { BOOLFALSE }
-  | id as str                    { Printf.printf "ID[%s] \n" str;ID str }     
-  | eof                          { exit 0 }
+  | id as str                    { (* Printf.printf "ID[%s]" str; *)ID str }     
+  | eof                          { EOF }
+  | _ as c                       { Printf.printf "Lexing error : Unknow character \'%c\'" c;exit 1}
       
 
 (* and matrix = parse *)
