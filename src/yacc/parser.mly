@@ -48,6 +48,7 @@ expressions :
 
 expression :
 | functionCall                                  { $1 }
+| variableDeclaration                           { $1 }
 | whileControl                                  { $1 }
 | ifControl                                     { $1 }
 | variable                                      { $1 }
