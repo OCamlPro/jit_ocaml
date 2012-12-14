@@ -333,7 +333,7 @@ public :
     add_uint8(code);
   }
 
-  void add_VarDecKind(const ast::VarDec::Kind kind)
+  void add_VarDec_Kind(const ast::VarDec::Kind kind)
   {
     int code = 250;
     switch(kind){
@@ -362,15 +362,16 @@ public :
   void add_varDec(const ast::VarDec* varDec)
   {
     add_Symbol(& varDec->name_get());
-    add_VarDecKind(varDec->kind_get());
+    add_VarDec_Kind(varDec->kind_get());
     add_exp(& varDec->init_get());
   }
-    void add_MatrixExp(const MatrixExp *e){
+
+  void add_MatrixLines(const  std::list<ast::MatrixLineExp*> *lines){
     int current_pos = get_pos();
     int nitems = 0;
     add_uint32(0);
     std::list<MatrixLineExp *>::const_iterator it;
-    for(it = e->lines_get().begin() ; it != e->lines_get().end() ; it++)
+    for(it = lines->begin() ; it != lines->end() ; it++)
       {
 	add_location(& (*it)->location_get());
 	add_exps((*it)->columns_get());
@@ -465,14 +466,21 @@ public :
   }
   void visitprivate_ReturnExp(const ReturnExp *e){ /* done */
     add_ast(20,e);
-    add_bool(e->is_global());
-    add_exp(& e->exp_get());
+    bool is_global = e->is_global();
+    add_bool(is_global);
+    if( !is_global ) /* otherwise exp is NULL */
+      add_exp(& e->exp_get());
   }
   void visitprivate_SelectExp(const SelectExp *e){
     add_ast(21,e);
-    add_location(& e->default_case_get()->location_get());
+    ast::SeqExp *default_case = e->default_case_get();
+    bool has_default = default_case != NULL;
+    add_bool( has_default );
+    if( has_default ) {
+      add_location(& default_case->location_get());
+      add_exps(default_case->exps_get());
+    }
     add_exp(e->select_get());
-    add_exps(e->default_case_get()->exps_get());
 
     int current_pos = get_pos();
     int nitems = 0;
@@ -494,7 +502,7 @@ public :
   }
   void visitprivate_CellExp(const CellExp *e){ /* done */
     add_ast(23,e);
-    add_MatrixExp(e);
+    add_MatrixLines(& e->lines_get());
   }
   void visitprivate_ArrayListExp(const ArrayListExp *e){ /* done */
     add_ast(24,e);
@@ -555,7 +563,7 @@ public :
   void visitprivate_MatrixExp(const MatrixExp *e) /* done */
   {
     add_ast(34,e);
-    add_MatrixExp(e);
+    add_MatrixLines(& e->lines_get());
   }
   void visitprivate_CallExp(const CallExp *e){ /* done */
     add_ast(35,e);

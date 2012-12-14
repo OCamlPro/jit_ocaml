@@ -239,13 +239,23 @@ let rec buf_exp b exp =
     buf_ast b exp 19
   | ControlExp (ReturnExp r) ->
     buf_ast b exp 20;
-    buf_bool b r.returnExp_is_global;
-    buf_exp b r.returnExp_exp
+    begin match r.returnExp_exp with
+      None ->
+        buf_bool b true
+    | Some returnExp_exp ->
+      buf_bool b false;
+      buf_exp b returnExp_exp
+    end
   | ControlExp (SelectExp s) ->
     buf_ast b exp 21;
-    buf_location b s.selectExp_default_location;
+    begin match s.selectExp_default with
+      None -> buf_bool b false
+    | Some (default_location, default) ->
+      buf_bool b true;
+      buf_location b default_location;
+    buf_exp_list b default
+    end;
     buf_exp b s.selectExp_selectme;
-    buf_exp_list b s.selectExp_default;
     buf_cases b s.selectExp_cases
       (* 22 would be for CaseExp, not possible yet *)
   | MathExp (CellExp m) ->

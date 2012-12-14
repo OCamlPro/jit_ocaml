@@ -156,14 +156,18 @@ let rec print_exp buf indent ast =
           print_exp buf indent2 ifExp_else
         end
 
-      | ReturnExp { returnExp_exp; returnExp_is_global } ->
-        Printf.bprintf buf "%sReturnExp %s\n" indent
-          (if returnExp_is_global then "(global)" else "");
-        let indent2 = indent ^ "  " in
-        print_exp buf indent2 returnExp_exp
+      | ReturnExp { returnExp_exp } ->
+        Printf.bprintf buf "%sReturnExp\n" indent;
+        begin match returnExp_exp with
+          None -> ()
+        | Some returnExp_exp ->
+          let indent2 = indent ^ "  " in
+          print_exp buf indent2 returnExp_exp
+        end
 
       | SelectExp { selectExp_selectme;
-                    selectExp_cases; selectExp_default } ->
+                    selectExp_cases;
+                    selectExp_default } ->
         Printf.bprintf buf "%sSelectExp\n" indent;
         let indent2 = indent ^ "    " in
         let indent3 = indent2 ^ "  " in
@@ -177,10 +181,14 @@ let rec print_exp buf indent ast =
           List.iter (fun exp ->
             print_exp buf indent3 exp) caseExp_body
         ) selectExp_cases;
-        Printf.bprintf buf "%s  default:\n" indent;
-        List.iter (fun exp ->
-          print_exp buf indent2 exp;
-        ) selectExp_default
+        begin match selectExp_default with
+          None -> ()
+        | Some (_, seqexp) ->
+          Printf.bprintf buf "%s  default:\n" indent;
+          List.iter (fun exp ->
+            print_exp buf indent2 exp;
+          ) seqexp
+        end
 
       | TryCatchExp { tryCatchExp_tryme; tryCatchExp_catchme } ->
         Printf.bprintf buf "%sTryCatchExp\n" indent;

@@ -178,8 +178,7 @@ and controlExp =
 and selectExp = {
   selectExp_selectme : exp;
   selectExp_cases : caseExp array;
-  selectExp_default_location : Location.t;
-  selectExp_default : seqExp;
+  selectExp_default : (Location.t * seqExp) option;
 }
 
 and caseExp = {
@@ -210,8 +209,7 @@ and ifExp_Kind =
 | IfExp_untyped_kind (* not yet known *)
 
 and returnExp = {
-  returnExp_exp : exp;
-  returnExp_is_global : bool;
+  returnExp_exp : exp option;
 }
 
 and tryCatchExp = {

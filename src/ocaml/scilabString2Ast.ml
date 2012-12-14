@@ -340,18 +340,29 @@ let rec get_exp s pos =
 
   | 20 ->
     let returnExp_is_global, pos = get_bool s pos in
-    let returnExp_exp, pos = get_exp s pos in
+    let returnExp_exp, pos =
+      if returnExp_is_global then None, pos else
+        let returnExp_exp, pos = get_exp s pos in
+        Some returnExp_exp, pos
+    in
     mkexp (ControlExp (ReturnExp {
-      returnExp_exp; returnExp_is_global
+      returnExp_exp
     })) info loc, pos
 
   | 21 ->
-    let selectExp_default_location, pos = get_location s pos in
+    let has_default, pos = get_bool s pos in
+    let selectExp_default, pos =
+      if has_default then
+        let default_location, pos = get_location s pos in
+        let default, pos = get_exps s pos in
+        Some (default_location, default), pos
+      else
+        None, pos
+    in
     let selectExp_selectme, pos = get_exp s pos in
-    let selectExp_default, pos = get_exps s pos in
     let selectExp_cases, pos = get_cases s pos in
     mkexp (ControlExp (SelectExp {
-      selectExp_default; selectExp_default_location;
+      selectExp_default;
       selectExp_selectme; selectExp_cases })) info loc, pos
 
   | 23 ->
