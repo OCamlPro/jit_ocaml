@@ -19,22 +19,25 @@ let integer   = ['0'-'9']+
 let number    = ['0'-'9']+(".")['0'-'9']*
 let little    = (".")['0'-'9']+
 
-let utf2  = (['\xC2'-'\xDF']['\x80'-'\xBF'])
+let utf2  = ['\xC2'-'\xDF']['\x80'-'\xBF']
 
-let utf31 = (['\xE0']['\xA0'-'\xBF']['\x80'-'\xBF'])
-let utf32 = (['\xE1'-'\xEC']['\x80'-'\xBF']['\x80'-'\xBF'])
-let utf33 = (['\xED']['\x80'-'\x9F']['\x80'-'\xBF'])
-let utf34 = (['\xEE'-'\xEF']['\x80'-'\xBF']['\x80'-'\xBF'])
-let utf41 = (['\xF0']['\x90'-'\xBF']['\x80'-'\xBF']['\x80'-'\xBF'])
-let utf42 = (['\xF1'-'\xF3']['\x80'-'\xBF']['\x80'-'\xBF']['\x80'-'\xBF'])
-let utf43 = (['\xF4']['\x80'-'\x8F']['\x80'-'\xBF']['\x80'-'\xBF'])
+let utf31 = ['\xE0']['\xA0'-'\xBF']['\x80'-'\xBF']
+let utf32 = ['\xE1'-'\xEC']['\x80'-'\xBF']['\x80'-'\xBF']
+let utf33 = ['\xED']['\x80'-'\x9F']['\x80'-'\xBF']
+let utf34 = ['\xEE'-'\xEF']['\x80'-'\xBF']['\x80'-'\xBF']
+let utf41 = ['\xF0']['\x90'-'\xBF']['\x80'-'\xBF']['\x80'-'\xBF']
+let utf42 = ['\xF1'-'\xF3']['\x80'-'\xBF']['\x80'-'\xBF']['\x80'-'\xBF']
+let utf43 = ['\xF4']['\x80'-'\x8F']['\x80'-'\xBF']['\x80'-'\xBF']
 
-let utf3 = (utf31 | utf32 | utf33 | utf34)
-let utf4 = (utf41 | utf42 | utf43)
+let utf3 = utf31 | utf32 | utf33 | utf34
+let utf4 = utf41 | utf42 | utf43
 
-let utf  = (utf2 | utf3 | utf4)
+let utf  =  utf2 | utf3 | utf4
 
-let id   = ((['a'-'z''A'-'Z''_''%''#''?''$'] | utf)(['a'-'z''A'-'Z''_''0'-'9''#''?''$'] | utf))*
+let id1  = ['a'-'z''A'-'Z''_''%''#''?''$'] | utf
+let id2  = ['a'-'z''A'-'Z''_''0'-'9''#''?''$'] | utf
+let id   = id1 id2*
+(* let id   = ['a'-'z''A'-'Z''_''%''#''?''$']['a'-'z''A'-'Z''_''0'-'9''#''?''$'] * *)
 
 let booltrue  = "%t" | "%T"
 let boolfalse = "%f" | "%F" 
