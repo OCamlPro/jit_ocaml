@@ -366,6 +366,14 @@ variable :
                                                   let off_end = Parsing.rhs_end_pos 1 in
                                                   let loc = create_loc off_st off_end in
                                                   create_exp loc (ConstExp doubleexp)}
+| NUM                                           { let doubleexp =
+                                                    DoubleExp { doubleExp_value = $1;
+                                                                doubleExp_bigDouble = ()} in
+                                                  let off_st = Parsing.rhs_start_pos 1 in
+                                                  let off_end = Parsing.rhs_end_pos 1 in
+                                                  let loc = create_loc off_st off_end in
+                                                  create_exp loc (ConstExp doubleexp)} 
+
 
 
 /* Matrix */

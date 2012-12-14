@@ -77,7 +77,6 @@ rule token = parse
   | integer as inum              { let num = float_of_string inum in
                                    VARINT num }
   | number as nnum               { let num = float_of_string nnum in
-                                   Printf.printf "%f" num;
                                    NUM num }
   | little as lnum               { let num = float_of_string lnum in
                                    Printf.printf "%f" num;
