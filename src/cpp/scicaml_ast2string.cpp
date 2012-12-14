@@ -540,11 +540,11 @@ public :
     add_exp(& e->step_get() );
     add_exp(& e->end_get() );
   }
-  void visitprivate_AssignExp(const AssignExp *e){ /* TODO */
+  void visitprivate_AssignExp(const AssignExp *e){
     add_ast(31,e);
     add_exp(& e->left_exp_get());
     add_exp(& e->right_exp_get());
-    /* TODO: e->right_val_get() */
+    /* TODO: e->right_val_get() - initialized during execution */
   }
   void visitprivate_OpExp(const OpExp *e){ /* done */
     add_ast(32,e);    

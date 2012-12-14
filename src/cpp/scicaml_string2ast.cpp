@@ -98,6 +98,73 @@ static ast::VarDec::Kind get_VarDec_Kind(void)
   exit(2);
 }
 
+static ast::OpExp::Kind get_OpExp_Kind(void)
+{
+  int code = get_uint8();
+  switch(code){
+  case 1 : return ast::OpExp::invalid_kind;
+  case 2 : return ast::OpExp::bool_kind;
+  case 3 : return ast::OpExp::string_kind;
+  case 4 : return ast::OpExp::integer_kind;
+  case 5 : return ast::OpExp::float_kind;
+  case 6 : return ast::OpExp::double_kind;
+  case 7 : return ast::OpExp::float_complex_kind;
+  case 8 : return ast::OpExp::double_complex_kind;
+      
+  case 9 : return ast::OpExp::bool_matrix_kind;
+  case 10 : return ast::OpExp::string_matrix_kind;
+  case 11 : return ast::OpExp::integer_matrix_kind;
+  case 12 : return ast::OpExp::float_matrix_kind;
+  case 13 : return ast::OpExp::double_matrix_kind;
+  case 14 : return ast::OpExp::float_complex_matrix_kind;
+  case 15 : return ast::OpExp::double_complex_matrix_kind;
+  }
+  std::cerr << "Unknown get_OpExp_Kind code " << code << std::endl;
+  exit(2);
+}
+
+static ast::OpExp::Oper get_OpExp_Oper(void)
+{
+  int code = get_uint8();
+  switch(code){
+   case 1 : return  ast::OpExp::plus;
+    case 2 : return  ast::OpExp::minus;
+    case 3 : return  ast::OpExp::times;
+    case 4 : return  ast::OpExp::rdivide;
+    case 5 : return  ast::OpExp::ldivide;
+    case 6 : return  ast::OpExp::power;
+
+    case 7 : return  ast::OpExp::dottimes;
+    case 8 : return  ast::OpExp::dotrdivide;
+    case 9 : return  ast::OpExp::dotldivide;
+    case 10 : return  ast::OpExp::dotpower;
+
+    case 11 : return  ast::OpExp::krontimes;
+    case 12 : return  ast::OpExp::kronrdivide;
+    case 13 : return  ast::OpExp::kronldivide;
+
+    case 14 : return  ast::OpExp::controltimes;
+    case 15 : return  ast::OpExp::controlrdivide;
+    case 16 : return  ast::OpExp::controlldivide;
+
+    case 17 : return  ast::OpExp::eq;
+    case 18 : return  ast::OpExp::ne;
+    case 19 : return  ast::OpExp::lt;
+    case 20 : return  ast::OpExp::le;
+    case 21 : return  ast::OpExp::gt;
+    case 22 : return  ast::OpExp::ge;
+
+    case 23 : return  ast::OpExp::unaryMinus;
+
+    case 24 : return  ast::OpExp::logicalAnd;
+    case 25 : return  ast::OpExp::logicalOr;
+    case 26 : return  ast::OpExp::logicalShortCutAnd;
+    case 27 : return  ast::OpExp::logicalShortCutOr;
+   }
+  std::cerr << "Unknown get_OpExp_Oper code " << code << std::endl;
+  exit(2);
+}
+
 static ast::IntExp::Prec get_IntExp_Prec(void)
 {
   int code = get_uint8();
@@ -394,16 +461,27 @@ static ast::Exp* get_exp(void)
     exp = new ast::AssignExp(*loc, *_left, *_right);
     break;
   }
-    /* TODO
   case 32: {
-    exp = new ast::OpExp(*loc);
+    ast::OpExp::Kind kind = get_OpExp_Kind();
+    ast::OpExp::Oper oper = get_OpExp_Oper();
+    ast::Exp *left = get_exp();
+    ast::Exp *right = get_exp(); 
+    ast::OpExp *_opexp  = new ast::OpExp(*loc, *left, oper, *right);
+    exp = _opexp;
+    _opexp->kind_set(kind);
     break;
   }
   case 33: {
-    exp = new ast::LogicalExp(*loc);
+    ast::OpExp::Kind kind = get_OpExp_Kind();
+    ast::OpExp::Oper oper = get_OpExp_Oper();
+    ast::Exp *left = get_exp();
+    ast::Exp *right = get_exp(); 
+    ast::LogicalOpExp *_opexp  = 
+      new ast::LogicalOpExp(*loc, *left, oper, *right);
+    exp = _opexp;
+    _opexp->kind_set(kind);
     break;
   }
-    */
   case 34: {
     std::list<ast::MatrixLineExp *> lines = get_MatrixLines();
     exp = new ast::MatrixExp(*loc, lines);
