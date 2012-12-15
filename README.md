@@ -2,6 +2,24 @@
 
 A JIT in OCaml for Scilab (part of the Richelieu FUI project)
 
+## Current Status
+
+For now (Dec 15, 2012):
+
+What has been implemented:
+
+- Translation from C++ AST to OCaml AST
+- Translation from OCaml AST to C++ AST
+- OCaml AST Printer
+
+What has to be implemented: 
+
+- Direct Scilab Parser to OCaml AST
+- Partial type inference on OCaml AST
+- Pattern matching of classical Scilab errors on OCaml AST
+- Pretty-printer of Scilab AST
+- JIT Compiler
+
 ## How to build
 
 - Checkout a new version of Scilab from your favorite GIT mirror

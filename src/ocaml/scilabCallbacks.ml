@@ -14,6 +14,10 @@ let debug = false
 let _ =
   Printf.fprintf stderr "OCaml JIT in !\n%!"
 
+let print_ast =
+  try
+    ignore (Sys.getenv "SCILAB_AST_DEBUG"); true
+  with _ -> false
 
 external jit_ocaml_register_callback_ml :
   (string -> string) -> unit = "jit_ocaml_register_callback_c"
@@ -28,7 +32,12 @@ let _ =
         if debug then begin
           ScilabString2Ast.diff_strings s1 s2;
           print_string (ScilabAstPrinter.to_string ast);
-        end;
+          print_newline ()
+        end else
+          if print_ast then begin
+            print_string (ScilabAstPrinter.to_string ast);
+            print_newline ()
+          end;
         s2
       with e ->
         Printf.fprintf stderr "jit_ocaml_register_callback_ml: exception %S\n%!"
