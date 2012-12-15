@@ -104,8 +104,8 @@ public:
   }
   void add_ast(unsigned int code, const ast::Exp* e)
   {
+    //    std::cerr << "add_ast at " << buflen << " code :" << code << std::endl;
     Location loc = e->location_get();
-    //    std::cerr << "add_ast :" << code << std::endl;
     add_uint8(code);
     add_location(&e->location_get());
     add_uint8(e->is_verbose());
@@ -120,6 +120,7 @@ public:
   /* ensure that we have [size] bytes in the buffer */
   void need(int size)
   {
+    //    std::cerr << "need " << size << std::endl;
     if( bufsize - buflen < size ){
       bufsize = 2 * bufsize + size + 2048;
       char *newbuf = (char*) malloc(bufsize);

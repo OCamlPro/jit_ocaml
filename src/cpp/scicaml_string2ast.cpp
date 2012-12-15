@@ -18,7 +18,8 @@
 
 extern ast::Exp* ast_saved;
 
-char *buf;
+unsigned char *initial_buf;
+unsigned char *buf;
 
 static unsigned int get_uint32(void)
 {
@@ -26,7 +27,16 @@ static unsigned int get_uint32(void)
   unsigned int c1 = *buf++;
   unsigned int c2 = *buf++;
   unsigned int c3 = *buf++;
+  //  std::cerr << "c0 = " << c0 << std::endl;
+  //  std::cerr << "c1 = " << c1 << std::endl;
+  //  std::cerr << "c2 = " << c2 << std::endl;
+  //  std::cerr << "c3 = " << c3 << std::endl;
   return c0 + ((c1 + ((c2 + (c3 << 8)) << 8 )) << 8 );
+}
+
+static int get_int32(void)
+{
+  return (int)get_uint32();
 }
 
 static unsigned int get_uint8(void)
@@ -42,10 +52,10 @@ static bool get_bool(void)
 Location *get_location(void)
 {
   Location *loc = new Location();
-  loc->first_line = get_uint8();
-  loc->first_column = get_uint8();
-  loc->last_line = get_uint8();
-  loc->last_column = get_uint8();
+  loc->first_line = get_uint32();
+  loc->first_column = get_uint32();
+  loc->last_line = get_uint32();
+  loc->last_column = get_uint32();
   return loc;
 }
 
@@ -185,6 +195,7 @@ static ast::IfExp::Kind get_IfExp_Kind(void)
   case 1 : return ast::IfExp::invalid_kind ;
   case 2 : return ast::IfExp::instruction_kind;
   case 3 : return ast::IfExp::expression_kind;
+  case 4 : return ast::IfExp::invalid_kind;
   }
   std::cerr << "Unknown get_IfExp_Kind code " << code << std::endl;
   exit(2);
@@ -203,9 +214,10 @@ static ast::TransposeExp::Kind get_TransposeExp_Kind(void)
 
 static std::wstring* get_wstring(void)
 {
-  int size = get_uint32();
+  unsigned int size = get_uint32();
   wchar_t* ss = (wchar_t*)buf;
-  std::wstring* s = new wstring(ss, size / sizeof(wchar_t));
+  // std::cerr << "size = " <<  size / sizeof(wchar_t) << std::endl;
+  std::wstring* s = new std::wstring(ss, size / sizeof(wchar_t));
   buf += size;
   return s;
 }
@@ -237,7 +249,9 @@ static ast::VarDec* get_VarDec(Location *vardec_location)
 static ast::Exp* get_exp(void)
 {
   ast::Exp* exp;
+  // std::cerr << "get_exp at pos " << (buf - initial_buf) << std::endl;
   int code = get_uint8();
+  // std::cerr << "    code = " << code << std::endl;
   Location *loc = get_location();
   int is_verbose = get_bool();
   int is_break = get_bool();
@@ -266,7 +280,7 @@ static ast::Exp* get_exp(void)
   }
   case 4: {
     ast::IntExp::Prec prec = get_IntExp_Prec();
-    int value = get_uint32();
+    int value = get_int32();
     exp = new ast::IntExp(*loc, prec, value);
     break;
   }
@@ -524,13 +538,9 @@ static ast::Exp* get_exp(void)
 ast::Exp* scicaml_string2ast(char *buffer)
 {
   std::cerr << "scicaml_string2ast" << std::endl;
-  /*
-  buf = buffer;
+  buf = (unsigned char*)buffer;
+  initial_buf = (unsigned char*)buffer;
   int buflen = get_uint32();
-  buf += 4;
   ast::Exp* new_ast = get_exp();
-  */
-  ast::Exp* ast = ast_saved;
-  ast_saved = NULL;
-  return ast;
+  return new_ast;
 }
