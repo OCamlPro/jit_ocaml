@@ -13,7 +13,11 @@
 open ScilabAst
 
 let buf_uint8 b n =
-  Buffer.add_char b (char_of_int n)
+  try
+    Buffer.add_char b (char_of_int n)
+  with e ->
+    Printf.fprintf stderr "buf_uint8 %d\n%!" n;
+    raise e
 
 let buf_bool b bool =
   buf_uint8 b (if bool then 1 else 0)
@@ -23,6 +27,13 @@ let buf_uint32 b n =
   buf_uint8 b ((n lsr 8) land 0xff);
   buf_uint8 b ((n lsr 16) land 0xff);
   buf_uint8 b ((n lsr 24) land 0xff);
+  ()
+
+let set_uint32 s pos n =
+  s.[pos] <- char_of_int (n land 0xff);
+  s.[pos+1] <- char_of_int ((n lsr 8) land 0xff);
+  s.[pos+2] <- char_of_int ((n lsr 16) land 0xff);
+  s.[pos+3] <- char_of_int ((n lsr 24) land 0xff);
   ()
 
 let buf_uint32_32 b nl =
@@ -45,7 +56,7 @@ let buf_double =
     ()
 
 let buf_wstring b s =
-  buf_uint8 b (String.length s);
+  buf_uint32 b (String.length s);
   Buffer.add_string b s
 let buf_Symbol = buf_wstring
 
@@ -61,6 +72,7 @@ let buf_location b loc =
   ()
 
 let buf_ast b exp code =
+  Printf.fprintf stderr "buf_ast %d -> %d\n%!" (Buffer.length b) code;
   buf_uint8 b code;
   buf_location b exp.exp_location;
   let i = exp.exp_info in
@@ -319,14 +331,14 @@ let rec buf_exp b exp =
     buf_exp_array b c.callExp_args
 
 and buf_MatrixExp b m =
-  buf_uint8 b (Array.length m.matrixExp_lines);
+  buf_uint32 b (Array.length m.matrixExp_lines);
   Array.iter (fun line ->
     buf_location b line.matrixLineExp_location;
     buf_exp_array b line.matrixLineExp_columns
   ) m.matrixExp_lines
 
 and buf_cases b cases =
-  buf_uint8 b (Array.length cases);
+  buf_uint32 b (Array.length cases);
   Array.iter (fun c ->
     buf_location b c.caseExp_location;
     buf_location b c.caseExp_body_location;
@@ -340,6 +352,7 @@ and buf_varDec b v =
   buf_exp b v.varDec_init
 
 and buf_vars b vars =
+  buf_uint32 b (Array.length vars);
   Array.iter (fun var ->
     buf_exp b { exp_desc = Var var;
                 exp_location = var.var_location;
@@ -348,14 +361,18 @@ and buf_vars b vars =
   ) vars
 
 and buf_exp_list b exps =
-  buf_uint8 b (List.length exps);
+  buf_uint32 b (List.length exps);
   List.iter (buf_exp b) exps
 
 and buf_exp_array b exps =
-  buf_uint8 b (Array.length exps);
+  Printf.fprintf stderr "buf_exp_array %d\n%!" (Array.length exps);
+  buf_uint32 b (Array.length exps);
   Array.iter (buf_exp b) exps
 
 let string_of_ast ast =
   Buffer.clear b;
+  Buffer.add_string b "1234";
   buf_exp b ast;
-  Buffer.contents b
+  let s = Buffer.contents b in
+  set_uint32 s 0 (String.length s);
+  s

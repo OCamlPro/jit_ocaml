@@ -210,9 +210,18 @@ let dummyExp = mkexp (SeqExp []) dummy_info dummy_loc
 
 let warning = ref None
 let return_dummyExp = ref false
+
+let indent = ref [""]
+
 let rec get_exp s pos =
   if !return_dummyExp then dummyExp, pos else
+    let _ = () in
+    let old_indent = List.hd !indent in
+    let old_pos = pos in
   let code, info, loc, pos = get_ast s pos in
+  indent := (Printf.sprintf "%s%d-" old_indent code) :: !indent;
+  Printf.fprintf stderr "%s : %d -> %d\n%!" old_indent old_pos code;
+  let exp, pos =
   match code with
   | 1 ->
     let items, pos = get_exps s pos in
@@ -471,7 +480,9 @@ let rec get_exp s pos =
       Printf.sprintf  "ast_of_buffer: code %d unknown" code);
     return_dummyExp := true;
     dummyExp, pos
-
+  in
+ indent := List.tl !indent;
+ exp, pos
 
 and get_varDec s pos =
   let varDec_name, pos = get_Symbol s pos in
@@ -534,7 +545,7 @@ and get_vars s pos =
   in
   vars, pos
 
-let ast_of_buffer s =
+let ast_of_string s =
   return_dummyExp := false;
   warning := None;
   let pos = 0 in
@@ -548,3 +559,10 @@ let ast_of_buffer s =
       Printf.fprintf stderr "Warning: %s\n%!" s
   end;
   ast
+
+let copy_string s =
+  let pos = 0 in
+  let buflen, pos = get_uint32 s pos in
+  let copy = String.create buflen in
+  String.unsafe_blit s 0 copy 0 buflen;
+  copy

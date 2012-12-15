@@ -1174,9 +1174,11 @@ src/ocaml/scilabAst2String.cmo : src/ocaml/scilabAst.cmx \
 src/ocaml/scilabAst2String.cmx : src/ocaml/scilabAst.cmx \
     src/ocaml/scilabAst2String.cmi
 src/ocaml/scilabCallbacks.cmo : src/ocaml/scilabString2Ast.cmi \
-    src/ocaml/scilabAstPrinter.cmi src/ocaml/scilabCallbacks.cmi
+    src/ocaml/scilabAstPrinter.cmi src/ocaml/scilabAst2String.cmi \
+    src/ocaml/scilabCallbacks.cmi
 src/ocaml/scilabCallbacks.cmx : src/ocaml/scilabString2Ast.cmx \
-    src/ocaml/scilabAstPrinter.cmx src/ocaml/scilabCallbacks.cmi
+    src/ocaml/scilabAstPrinter.cmx src/ocaml/scilabAst2String.cmx \
+    src/ocaml/scilabCallbacks.cmi
 src/ocaml/scilabAstPrinter.cmi : src/ocaml/scilabAst.cmx
 src/ocaml/scilabString2Ast.cmi : src/ocaml/scilabAst.cmx
 src/ocaml/scilabAst2String.cmi : src/ocaml/scilabAst.cmx

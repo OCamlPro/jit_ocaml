@@ -527,6 +527,7 @@ ast::Exp* scicaml_string2ast(char *buffer)
   /*
   buf = buffer;
   int buflen = get_uint32();
+  buf += 4;
   ast::Exp* new_ast = get_exp();
   */
   ast::Exp* ast = ast_saved;
