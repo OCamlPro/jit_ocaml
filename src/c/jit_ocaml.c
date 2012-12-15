@@ -40,7 +40,7 @@ char* jit_ocaml_analyze(char *buf)
     argv[0] = NULL;
     caml_startup(argv);
   }
-  fprintf(stderr, "%d %d %d %d\n", buf[0],buf[1],buf[2],buf[3]);
+  /*  fprintf(stderr, "%d %d %d %d\n", buf[0],buf[1],buf[2],buf[3]); */
   ret = caml_callback(jit_ocaml_registered_callback, (value)buf);
   return buf;
 }

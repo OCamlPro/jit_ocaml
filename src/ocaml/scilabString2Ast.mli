@@ -15,3 +15,4 @@
 val ast_of_string : string -> ScilabAst.exp
 
 val copy_string : string -> string
+val diff_strings : string -> string -> unit

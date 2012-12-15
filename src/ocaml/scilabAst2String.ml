@@ -12,6 +12,8 @@
 
 open ScilabAst
 
+let debug = false
+
 let buf_uint8 b n =
   try
     Buffer.add_char b (char_of_int n)
@@ -72,7 +74,8 @@ let buf_location b loc =
   ()
 
 let buf_ast b exp code =
-  Printf.fprintf stderr "buf_ast %d -> %d\n%!" (Buffer.length b) code;
+  if debug then
+    Printf.fprintf stderr "buf_ast %d -> %d\n%!" (Buffer.length b) code;
   buf_uint8 b code;
   buf_location b exp.exp_location;
   let i = exp.exp_info in
@@ -365,7 +368,8 @@ and buf_exp_list b exps =
   List.iter (buf_exp b) exps
 
 and buf_exp_array b exps =
-  Printf.fprintf stderr "buf_exp_array %d\n%!" (Array.length exps);
+  if debug then
+    Printf.fprintf stderr "buf_exp_array %d\n%!" (Array.length exps);
   buf_uint32 b (Array.length exps);
   Array.iter (buf_exp b) exps
 

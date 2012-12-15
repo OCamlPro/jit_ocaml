@@ -10,8 +10,10 @@
  *
  *)
 
+let debug = false
 let _ =
-  Printf.fprintf stderr "HELLO !\n%!"
+  Printf.fprintf stderr "OCaml JIT in !\n%!"
+
 
 external jit_ocaml_register_callback_ml :
   (string -> string) -> unit = "jit_ocaml_register_callback_c"
@@ -19,34 +21,19 @@ external jit_ocaml_register_callback_ml :
 let _ =
   jit_ocaml_register_callback_ml
     (fun s_c ->
-      Printf.fprintf stderr "jit_ocaml_register_callback_ml\n%!";
       try
         let ast = ScilabString2Ast.ast_of_string s_c in
-        Printf.fprintf stderr "1\n%!";
         let s1 = ScilabString2Ast.copy_string s_c in
-        Printf.fprintf stderr "2\n%!";
         let s2 = ScilabAst2String.string_of_ast ast in
-        Printf.fprintf stderr "3\n%!";
-        if s1 <> s2 then begin
-          let len1 = String.length s1 in
-          let len2 = String.length s2 in
-          Printf.fprintf stderr "len1 = %d <> len2 = %d\n%!" len1 len2;
-          for i = 4 to (min len1 len2)-1 do
-            if s1.[i] <> s2.[i] then begin
-              Printf.fprintf stderr "diff at %d\n%!" i;
-              exit 2
-            end
-          done
-
+        if debug then begin
+          ScilabString2Ast.diff_strings s1 s2;
+          print_string (ScilabAstPrinter.to_string ast);
         end;
-
-        print_string (ScilabAstPrinter.to_string ast);
-        print_newline ();
-        "retour"
+        s2
       with e ->
         Printf.fprintf stderr "jit_ocaml_register_callback_ml: exception %S\n%!"
           (Printexc.to_string e);
-        "exception"
+        s_c
     )
 
 let main () = ()

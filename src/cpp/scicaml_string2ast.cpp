@@ -61,7 +61,7 @@ Location *get_location(void)
 
 static ast::Exp* get_exp(void);
 
-static std::list<ast::Exp*> get_exps(void)
+static std::list<ast::Exp*>* get_exps(void)
 {
   int nitems = get_uint32();
   std::list<ast::Exp*> *list = new  std::list<ast::Exp*>;
@@ -69,23 +69,23 @@ static std::list<ast::Exp*> get_exps(void)
     ast::Exp* exp = get_exp();
     list->push_back(exp);
   }
-  return *list;
+  return list;
 }
 
-static std::list<ast::MatrixLineExp*> get_MatrixLines(void)
+static std::list<ast::MatrixLineExp*>* get_MatrixLines(void)
 {
   int nitems = get_uint32();
   std::list<ast::MatrixLineExp*> *list = new  std::list<ast::MatrixLineExp*>;
   for(int i = 0; i < nitems; i++){
     Location *line_loc = get_location();
-    std::list<ast::Exp*> columns = get_exps();
-    ast::MatrixLineExp* line = new ast::MatrixLineExp(*line_loc, columns);
+    std::list<ast::Exp*>* columns = get_exps();
+    ast::MatrixLineExp* line = new ast::MatrixLineExp(*line_loc,* columns);
     list->push_back(line);
   }
-  return *list;
+  return list;
 }
 
-static std::list<ast::Var*> get_vars(void)
+static std::list<ast::Var*>* get_vars(void)
 {
   int nitems = get_uint32();
   std::list<ast::Var*> *list = new  std::list<ast::Var*>;
@@ -93,7 +93,7 @@ static std::list<ast::Var*> get_vars(void)
     ast::Var* var = dynamic_cast<ast::Var*>(get_exp());
     list->push_back(var);
   }
-  return *list;
+  return list;
 }
 
 static ast::VarDec::Kind get_VarDec_Kind(void)
@@ -195,7 +195,7 @@ static ast::IfExp::Kind get_IfExp_Kind(void)
   case 1 : return ast::IfExp::invalid_kind ;
   case 2 : return ast::IfExp::instruction_kind;
   case 3 : return ast::IfExp::expression_kind;
-  case 4 : return ast::IfExp::invalid_kind;
+  case 4 : return (ast::IfExp::Kind)0;
   }
   std::cerr << "Unknown get_IfExp_Kind code " << code << std::endl;
   exit(2);
@@ -264,8 +264,8 @@ static ast::Exp* get_exp(void)
   
   switch(code){
   case 1: {   
-    std::list<ast::Exp *> l_body = get_exps();
-    exp = new ast::SeqExp(*loc, l_body);
+    std::list<ast::Exp *>* l_body = get_exps();
+    exp = new ast::SeqExp(*loc, *l_body);
     break;
   }
   case 2: {
@@ -317,8 +317,8 @@ static ast::Exp* get_exp(void)
     break;
   }
   case 12: {
-    std::list<ast::Var*> vars = get_vars();
-    exp = new ast::ArrayListVar(*loc, vars);
+    std::list<ast::Var*>* vars = get_vars();
+    exp = new ast::ArrayListVar(*loc, *vars);
     break;
   }
   case 13: {
@@ -332,21 +332,24 @@ static ast::Exp* get_exp(void)
     bool has_else = get_bool();
     ast::Exp* test = get_exp();
     ast::Exp* _then = get_exp();
+    ast::IfExp* ifexp;
     if( has_else ){
       ast::Exp* _else = get_exp();
-      exp = new ast::IfExp(*loc, *test, *_then, *_else);
+      ifexp = new ast::IfExp(*loc, *test, *_then, *_else);
     } else {
-      exp = new ast::IfExp(*loc, *test, *_then);
+      ifexp = new ast::IfExp(*loc, *test, *_then);
     }
+    ifexp->kind_set(kind);
+    exp = ifexp;
     break;
   }
   case 15: {
     Location *try_location = get_location();
     Location *catch_location = get_location();
-    std::list<ast::Exp *> try_exps = get_exps();
-    std::list<ast::Exp *> catch_exps = get_exps();
-    ast::SeqExp *_try = new ast::SeqExp(*try_location, try_exps);
-    ast::SeqExp *_catch = new ast::SeqExp(*catch_location, catch_exps);
+    std::list<ast::Exp *>* try_exps = get_exps();
+    std::list<ast::Exp *>* catch_exps = get_exps();
+    ast::SeqExp *_try = new ast::SeqExp(*try_location, *try_exps);
+    ast::SeqExp *_catch = new ast::SeqExp(*catch_location, *catch_exps);
     exp = new ast::TryCatchExp(*loc, *_try, *_catch);
     break;
   }
@@ -386,9 +389,9 @@ static ast::Exp* get_exp(void)
     ast::SeqExp * default_case = NULL;
     if( has_default ){
       Location *default_case_location = get_location();
-      std::list<ast::Exp *> default_case_exps = get_exps();
+      std::list<ast::Exp *>* default_case_exps = get_exps();
       default_case = new ast::SeqExp(*default_case_location, 
-				     default_case_exps);    
+				     *default_case_exps);    
     }
     ast::Exp* select = get_exp();
 
@@ -399,8 +402,8 @@ static ast::Exp* get_exp(void)
       Location *case_location = get_location();
       Location *body_location = get_location();
       ast::Exp* test = get_exp();
-      std::list<ast::Exp *> body_exps = get_exps();
-      ast::SeqExp *body = new ast::SeqExp(*body_location,  body_exps);
+      std::list<ast::Exp *>* body_exps = get_exps();
+      ast::SeqExp *body = new ast::SeqExp(*body_location,  *body_exps);
 
       ast::CaseExp* _case = new ast::CaseExp(*case_location, *test, *body);
       cases->push_back(_case);
@@ -421,18 +424,18 @@ static ast::Exp* get_exp(void)
   }
     */
   case 23: {
-    std::list<ast::MatrixLineExp *> lines = get_MatrixLines();
-    exp = new ast::CellExp(*loc, lines);
+    std::list<ast::MatrixLineExp *>* lines = get_MatrixLines();
+    exp = new ast::CellExp(*loc, *lines);
     break;
   }
   case 24: {
-    std::list<ast::Exp *> exps = get_exps();
-    exp = new ast::ArrayListExp(*loc, exps);
+    std::list<ast::Exp *>* exps = get_exps();
+    exp = new ast::ArrayListExp(*loc, *exps);
     break;
   }
   case 25: {
-    std::list<ast::Exp *> exps = get_exps();
-    exp = new ast::AssignListExp(*loc, exps);
+    std::list<ast::Exp *>* exps = get_exps();
+    exp = new ast::AssignListExp(*loc, *exps);
     break;
   }
   case 26: {
@@ -455,10 +458,10 @@ static ast::Exp* get_exp(void)
     Location *args_loc = get_location();
     Location *returns_loc = get_location();
     ast::Exp* body = get_exp();
-    std::list <ast::Var*> args_list = get_vars();
-    std::list <ast::Var*> returns_list = get_vars();
-    ast::ArrayListVar *args = new ast::ArrayListVar(*args_loc, args_list);
-    ast::ArrayListVar *returns = new ast::ArrayListVar(*returns_loc, returns_list);
+    std::list <ast::Var*>* args_list = get_vars();
+    std::list <ast::Var*>* returns_list = get_vars();
+    ast::ArrayListVar *args = new ast::ArrayListVar(*args_loc, *args_list);
+    ast::ArrayListVar *returns = new ast::ArrayListVar(*returns_loc, *returns_list);
     exp = new ast::FunctionDec(*loc, *name, *args, *returns, *body);
     break;
   }
@@ -497,14 +500,14 @@ static ast::Exp* get_exp(void)
     break;
   }
   case 34: {
-    std::list<ast::MatrixLineExp *> lines = get_MatrixLines();
-    exp = new ast::MatrixExp(*loc, lines);
+    std::list<ast::MatrixLineExp *>* lines = get_MatrixLines();
+    exp = new ast::MatrixExp(*loc, *lines);
     break;
   }
   case 35: {
     ast::Exp* name = get_exp();    
-    std::list<ast::Exp *> args = get_exps();
-    exp = new ast::CallExp(*loc, *name, args);
+    std::list<ast::Exp *> * args = get_exps();
+    exp = new ast::CallExp(*loc, *name, *args);
     break;
   }
     /* SHOULD NEVER HAPPEN
@@ -515,8 +518,8 @@ static ast::Exp* get_exp(void)
     */
   case 37: {
     ast::Exp* name = get_exp();    
-    std::list<ast::Exp *> args = get_exps();
-    exp = new ast::CellCallExp(*loc, *name, args);
+    std::list<ast::Exp *>* args = get_exps();
+    exp = new ast::CellCallExp(*loc, *name, *args);
     break;
   }
   default: 
@@ -537,7 +540,7 @@ static ast::Exp* get_exp(void)
 
 ast::Exp* scicaml_string2ast(char *buffer)
 {
-  std::cerr << "scicaml_string2ast" << std::endl;
+  // std::cerr << "scicaml_string2ast" << std::endl;
   buf = (unsigned char*)buffer;
   initial_buf = (unsigned char*)buffer;
   int buflen = get_uint32();

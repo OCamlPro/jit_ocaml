@@ -90,8 +90,8 @@ public:
   char *get_buf(void){ 
     need(1);
     set_uint32(0, buflen);
-    //    std::cerr << "get_buf :" << buflen << std::endl;
-    fprintf(stderr, "%d %d %d %d\n", buf[0],buf[1],buf[2],buf[3]);
+    // std::cerr << "get_buf :" << buflen << std::endl;
+    //    fprintf(stderr, "%d %d %d %d\n", buf[0],buf[1],buf[2],buf[3]);
     return buf; 
   }
 
@@ -248,7 +248,9 @@ public :
     case ast::IfExp::invalid_kind : code = (1); break;
     case ast::IfExp::instruction_kind : code = (2); break;
     case ast::IfExp::expression_kind : code = (3); break;
-    default : code = (4); break;
+    default : 
+      //      std::cerr << "add_IfExp_Kind : " << kind << std::endl;
+      code = (1); break;
     }
     add_uint8(code);
   }
@@ -776,7 +778,7 @@ class SerializeVisitor : public SerializeVisitorT<SerializeVisitor>
 
 char* scicaml_ast2string(ast::Exp* ast)
 {
-  std::cerr << "scicaml_ast2string" << std::endl;
+  // std::cerr << "scicaml_ast2string" << std::endl;
 
   ast::SerializeVisitor visitor;
 
