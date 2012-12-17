@@ -1,6 +1,6 @@
 /*
  *  Scilab ( http://www.scilab.org/ ) - This file is part of Scilab
- *  Copyright (C) 2010-2010 - DIGITEO - Antoine ELIAS
+ *  Copyright (C) 2012-2012 - OCAMLPRO INRIA - Fabrice LE FESSANT
  *
  *  This file must be used under the terms of the CeCILL.
  *  This source file is licensed as described in the file COPYING, which
@@ -90,8 +90,8 @@ public:
   char *get_buf(void){ 
     need(1);
     set_uint32(0, buflen);
-    //    std::cerr << "get_buf :" << buflen << std::endl;
-    fprintf(stderr, "%d %d %d %d\n", buf[0],buf[1],buf[2],buf[3]);
+    // std::cerr << "get_buf :" << buflen << std::endl;
+    //    fprintf(stderr, "%d %d %d %d\n", buf[0],buf[1],buf[2],buf[3]);
     return buf; 
   }
 
@@ -104,8 +104,8 @@ public:
   }
   void add_ast(unsigned int code, const ast::Exp* e)
   {
+    //    std::cerr << "add_ast at " << buflen << " code :" << code << std::endl;
     Location loc = e->location_get();
-    //    std::cerr << "add_ast :" << code << std::endl;
     add_uint8(code);
     add_location(&e->location_get());
     add_uint8(e->is_verbose());
@@ -120,6 +120,7 @@ public:
   /* ensure that we have [size] bytes in the buffer */
   void need(int size)
   {
+    //    std::cerr << "need " << size << std::endl;
     if( bufsize - buflen < size ){
       bufsize = 2 * bufsize + size + 2048;
       char *newbuf = (char*) malloc(bufsize);
@@ -247,7 +248,9 @@ public :
     case ast::IfExp::invalid_kind : code = (1); break;
     case ast::IfExp::instruction_kind : code = (2); break;
     case ast::IfExp::expression_kind : code = (3); break;
-    default : code = (4); break;
+    default : 
+      //      std::cerr << "add_IfExp_Kind : " << kind << std::endl;
+      code = (1); break;
     }
     add_uint8(code);
   }
@@ -333,7 +336,7 @@ public :
     add_uint8(code);
   }
 
-  void add_VarDecKind(const ast::VarDec::Kind kind)
+  void add_VarDec_Kind(const ast::VarDec::Kind kind)
   {
     int code = 250;
     switch(kind){
@@ -344,12 +347,40 @@ public :
     add_uint8(code);
   }
 
+  void add_TransposeExp_Kind(const ast::TransposeExp::Kind kind)
+  {
+    int code = 249;
+    switch(kind){
+    case ast::TransposeExp::_Conjugate_ : code = (1); break;
+    case ast::TransposeExp::_NonConjugate_: code = (2); break;
+    }
+    add_uint8(code);
+  }
+
+  void add_bool(bool b)
+  {
+    add_uint8(b);
+  }
 
   void add_varDec(const ast::VarDec* varDec)
   {
     add_Symbol(& varDec->name_get());
-    add_VarDecKind(varDec->kind_get());
+    add_VarDec_Kind(varDec->kind_get());
     add_exp(& varDec->init_get());
+  }
+
+  void add_MatrixLines(const  std::list<ast::MatrixLineExp*> *lines){
+    int current_pos = get_pos();
+    int nitems = 0;
+    add_uint32(0);
+    std::list<MatrixLineExp *>::const_iterator it;
+    for(it = lines->begin() ; it != lines->end() ; it++)
+      {
+	add_location(& (*it)->location_get());
+	add_exps((*it)->columns_get());
+	nitems ++;
+      }
+    set_uint32(current_pos, nitems);
   }
 
   void visitprivate_SeqExp(const SeqExp *e){ /* done */
@@ -379,7 +410,7 @@ public :
   }
   void visitprivate_BoolExp(const BoolExp *e){ /* done */
     add_ast(7,e);
-    add_uint8(e->value_get());
+    add_bool(e->value_get());
   }
   void visitprivate_NilExp(const NilExp *e){ /* done */
     add_ast(8,e);
@@ -407,78 +438,116 @@ public :
     add_ast(14,e);
     add_IfExp_Kind(e->kind_get());
     bool has_else = e->has_else();
-    add_uint8(has_else);
+    add_bool(has_else);
     add_exp(& e->test_get());
     add_exp(& e->then_get());
     if( has_else ) add_exp(& e->else_get());
   }
   void visitprivate_TryCatchExp(const TryCatchExp *e){ /* done */
     add_ast(15,e);
+    add_location(& e->try_get().location_get());
+    add_location(& e->catch_get().location_get());
     add_exps(e->try_get().exps_get());
     add_exps(e->catch_get().exps_get());
   }
-  void visitprivate_WhileExp(const WhileExp *e){
+  void visitprivate_WhileExp(const WhileExp *e){ /* done */
     add_ast(16,e);
     add_exp(& e->test_get());
     add_exp(& e->body_get());
   }
-  void visitprivate_ForExp(const ForExp *e){
+  void visitprivate_ForExp(const ForExp *e){  /* done */
     add_ast(17,e);
     add_location(& e->vardec_get().location_get());
     add_varDec(& e->vardec_get());
     add_exp(& e->body_get());
   }
-  void visitprivate_BreakExp(const BreakExp *e){
+  void visitprivate_BreakExp(const BreakExp *e){ /* done */
     add_ast(18,e);
   }
-  void visitprivate_ContinueExp(const ContinueExp *e){
+  void visitprivate_ContinueExp(const ContinueExp *e){ /* done */
     add_ast(19,e);
   }
-  void visitprivate_ReturnExp(const ReturnExp *e){
+  void visitprivate_ReturnExp(const ReturnExp *e){ /* done */
     add_ast(20,e);
+    bool is_global = e->is_global();
+    add_bool(is_global);
+    if( !is_global ) /* otherwise exp is NULL */
+      add_exp(& e->exp_get());
   }
   void visitprivate_SelectExp(const SelectExp *e){
     add_ast(21,e);
+    ast::SeqExp *default_case = e->default_case_get();
+    bool has_default = default_case != NULL;
+    add_bool( has_default );
+    if( has_default ) {
+      add_location(& default_case->location_get());
+      add_exps(default_case->exps_get());
+    }
+    add_exp(e->select_get());
+
+    int current_pos = get_pos();
+    int nitems = 0;
+    add_uint32(0);
+    cases_t::const_iterator it;
+    for(it = e->cases_get()->begin() ; it != e->cases_get()->end() ; it++)
+            {
+	      const ast::CaseExp *ce = *it;
+	      nitems ++;
+	      add_location(& ce->location_get() );
+	      add_location(& ce->body_get()->location_get() );
+	      add_exp( ce->test_get() );
+	      add_exps( ce->body_get()->exps_get() );
+            }
+    set_uint32(current_pos, nitems);
   }
-  void visitprivate_CaseExp(const CaseExp *e){
+  void visitprivate_CaseExp(const CaseExp *e){ /* SHOULD NEVER HAPPEN */
     add_ast(22,e);
   }
   void visitprivate_CellExp(const CellExp *e){ /* done */
     add_ast(23,e);
-    visitprivate_MatrixExp(e);
+    add_MatrixLines(& e->lines_get());
   }
-  void visitprivate_ArrayListExp(const ArrayListExp *e){
+  void visitprivate_ArrayListExp(const ArrayListExp *e){ /* done */
     add_ast(24,e);
+    add_exps(e->exps_get());
   }
-  void visitprivate_AssignListExp(const AssignListExp *e){
+  void visitprivate_AssignListExp(const AssignListExp *e){ /* done */
     add_ast(25,e);
+    add_exps(e->exps_get());
   }
-  void visitprivate_NotExp(const NotExp *e){
+  void visitprivate_NotExp(const NotExp *e){ /* done */
     add_ast(26,e);
+    add_exp(& e->exp_get() );
   }
-  void visitprivate_TransposeExp(const TransposeExp *e){
+  void visitprivate_TransposeExp(const TransposeExp *e){ /* done */
     add_ast(27,e);
+    add_TransposeExp_Kind(e->conjugate_get());
+    add_exp(& e->exp_get());
   }
   void visitprivate_VarDec(const VarDec *e){
     add_ast(28,e);
+    add_varDec(e);
   }
-  void visitprivate_FunctionDec(const FunctionDec *e){
+  void visitprivate_FunctionDec(const FunctionDec *e){ /* done */
     add_ast(29,e);
     add_Symbol(& e->name_get());    
-    add_exp(& e->body_get());
     add_location(& e->args_get().location_get());
-    add_vars(& e->args_get());
     add_location(& e->returns_get().location_get());
+    add_exp(& e->body_get());
+    add_vars(& e->args_get());
     add_vars(& e->returns_get());
   }
-  void visitprivate_ListExp(const ListExp *e){
+  void visitprivate_ListExp(const ListExp *e){ /* done */
     add_ast(30,e);
+    add_exp(& e->start_get() );
+    add_exp(& e->step_get() );
+    add_exp(& e->end_get() );
   }
-  void visitprivate_AssignExp(const AssignExp *e){ /* TODO */
+  void visitprivate_AssignExp(const AssignExp *e){
     add_ast(31,e);
     add_exp(& e->left_exp_get());
     add_exp(& e->right_exp_get());
-    /* TODO: e->right_val_get() */
+    /* TODO: e->right_val_get() - initialized during execution */
   }
   void visitprivate_OpExp(const OpExp *e){ /* done */
     add_ast(32,e);    
@@ -497,28 +566,20 @@ public :
   void visitprivate_MatrixExp(const MatrixExp *e) /* done */
   {
     add_ast(34,e);
-    int current_pos = get_pos();
-    int nitems = 0;
-    add_uint32(0);
-    std::list<MatrixLineExp *>::const_iterator it;
-    for(it = e->lines_get().begin() ; it != e->lines_get().end() ; it++)
-      {
-	add_location(& (*it)->location_get());
-	add_exps((*it)->columns_get());
-	nitems ++;
-      }
-    set_uint32(current_pos, nitems);
+    add_MatrixLines(& e->lines_get());
   }
   void visitprivate_CallExp(const CallExp *e){ /* done */
     add_ast(35,e);
     add_exp(& e->name_get());
     add_exps(e->args_get());
   }
-  void visitprivate_MatrixLineExp(const MatrixLineExp *e){
+  void visitprivate_MatrixLineExp(const MatrixLineExp *e){ /* SHOULD NEVER HAPPEN */
     add_ast(36,e);
   }
-  void visitprivate_CellCallExp(const CellCallExp *e){
+  void visitprivate_CellCallExp(const CellCallExp *e){ /* done */
     add_ast(37,e);
+    add_exp(& e->name_get());
+    add_exps(e->args_get());
   }
 
 };
@@ -717,7 +778,7 @@ class SerializeVisitor : public SerializeVisitorT<SerializeVisitor>
 
 char* scicaml_ast2string(ast::Exp* ast)
 {
-  std::cerr << "scicaml_ast2string" << std::endl;
+  // std::cerr << "scicaml_ast2string" << std::endl;
 
   ast::SerializeVisitor visitor;
 

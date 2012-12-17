@@ -540,10 +540,12 @@ OCAML_AST_MLIS = \
 
 OCAML_SCILAB_MLS = \
 	src/ocaml/scilabString2Ast.ml \
+	src/ocaml/scilabAst2String.ml \
 	src/ocaml/scilabCallbacks.ml
 
 OCAML_SCILAB_MLIS = \
 	src/ocaml/scilabString2Ast.mli \
+	src/ocaml/scilabAst2String.mli \
 	src/ocaml/scilabCallbacks.mli
 
 OCAML_MLS = \
@@ -1157,6 +1159,8 @@ depend_ocaml:
 	$(OCAMLDEP) -native $(OCAML_INCL) $(OCAML_MLS) $(OCAML_MLIS) > .depend_ocaml
 src/ocaml/scilabAst.cmo :
 src/ocaml/scilabAst.cmx :
+src/ocaml/scilabTypes.cmo :
+src/ocaml/scilabTypes.cmx :
 src/ocaml/scilabAstPrinter.cmo : src/ocaml/scilabAst.cmx \
     src/ocaml/scilabAstPrinter.cmi
 src/ocaml/scilabAstPrinter.cmx : src/ocaml/scilabAst.cmx \
@@ -1165,12 +1169,19 @@ src/ocaml/scilabString2Ast.cmo : src/ocaml/scilabAst.cmx \
     src/ocaml/scilabString2Ast.cmi
 src/ocaml/scilabString2Ast.cmx : src/ocaml/scilabAst.cmx \
     src/ocaml/scilabString2Ast.cmi
+src/ocaml/scilabAst2String.cmo : src/ocaml/scilabAst.cmx \
+    src/ocaml/scilabAst2String.cmi
+src/ocaml/scilabAst2String.cmx : src/ocaml/scilabAst.cmx \
+    src/ocaml/scilabAst2String.cmi
 src/ocaml/scilabCallbacks.cmo : src/ocaml/scilabString2Ast.cmi \
-    src/ocaml/scilabAstPrinter.cmi src/ocaml/scilabCallbacks.cmi
+    src/ocaml/scilabAstPrinter.cmi src/ocaml/scilabAst2String.cmi \
+    src/ocaml/scilabCallbacks.cmi
 src/ocaml/scilabCallbacks.cmx : src/ocaml/scilabString2Ast.cmx \
-    src/ocaml/scilabAstPrinter.cmx src/ocaml/scilabCallbacks.cmi
+    src/ocaml/scilabAstPrinter.cmx src/ocaml/scilabAst2String.cmx \
+    src/ocaml/scilabCallbacks.cmi
 src/ocaml/scilabAstPrinter.cmi : src/ocaml/scilabAst.cmx
 src/ocaml/scilabString2Ast.cmi : src/ocaml/scilabAst.cmx
+src/ocaml/scilabAst2String.cmi : src/ocaml/scilabAst.cmx
 src/ocaml/scilabCallbacks.cmi :
 
 .ml.cmx:

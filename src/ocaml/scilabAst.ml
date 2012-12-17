@@ -1,15 +1,18 @@
+(*
+ *  Scilab ( http://www.scilab.org/ ) - This file is part of Scilab
+ *  Copyright (C) 2012-2012 - OCAMLPRO INRIA - Fabrice LE FESSANT
+ *
+ *  This file must be used under the terms of the CeCILL.
+ *  This source file is licensed as described in the file COPYING, which
+ *  you should have received as part of this distribution.  The terms
+ *  are also available at
+ *  http://www.cecill.info/licences/Licence_CeCILL_V2-en.txt
+ *
+ *)
+
 (* A direct translation of the class hierarchy of modules/ast/includes/ *)
 
 (* Questions: what are the Big... types ? *)
-(* TODO:
- * no node for:
- * ArrayListExp
- * ArrayListVar
- * AssignListExp (* TODO ? *)
- * CellCallExp   (* TODO ? *)
- * LogicalOpExp  (* TODO ? *)
-
-*)
 
 
 type location = {
@@ -93,6 +96,7 @@ and exp_info = {
 and exp_desc =
   AssignExp of assignExp
 | CallExp of callExp
+| CellCallExp of callExp
 | ConstExp of constExp
 | ControlExp of controlExp
 | Dec of dec
@@ -173,12 +177,14 @@ and controlExp =
 
 and selectExp = {
   selectExp_selectme : exp;
-  selectExp_cases : caseExp list;
-  selectExp_default : seqExp;
+  selectExp_cases : caseExp array;
+  selectExp_default : (Location.t * seqExp) option;
 }
 
 and caseExp = {
+  caseExp_location : Location.t;
   caseExp_test : exp;
+  caseExp_body_location : Location.t;
   caseExp_body : seqExp;
 }
 
@@ -203,12 +209,13 @@ and ifExp_Kind =
 | IfExp_untyped_kind (* not yet known *)
 
 and returnExp = {
-  returnExp_exp : exp;
-  returnExp_is_global : bool;
+  returnExp_exp : exp option;
 }
 
 and tryCatchExp = {
+  tryCatchExp_tryme_location : Location.t;
   tryCatchExp_tryme : seqExp;
+  tryCatchExp_catchme_location : Location.t;
   tryCatchExp_catchme : seqExp;
 }
 
@@ -230,7 +237,8 @@ and listExp = {
 
 and mathExp =
 | MatrixExp of matrixExp
-| MatrixLineExp of exp array
+| CellExp of matrixExp
+(* | MatrixLineExp of exp array *)
 | NotExp of notExp
 | OpExp of opExp_Oper * opExp_args
 | LogicalOpExp of opLogicalExp_Oper * opExp_args
@@ -251,7 +259,7 @@ and notExp = {
 
 and opExp_args = {
   opExp_left : exp;
-  opExp_right : exp option;
+  opExp_right : exp;
   opExp_kind : opExp_Kind;
 }
 
@@ -408,3 +416,21 @@ in run_MatrixExp.hxx
 in run_CallExp.hxx
     void visitprivate(const CallExp &e)
 *)
+
+
+
+let dummy_info = {
+  is_verbose = false;
+  is_break = false;
+  is_breakable = false;
+  is_return = false;
+  is_returnable = false;
+  is_continue = false;
+  is_continuable = false;
+}
+let dummy_loc = {
+  first_line = 0;
+  first_column = 0;
+  last_line = 0;
+  last_column = 0;
+}

@@ -1,6 +1,18 @@
+(*
+ *  Scilab ( http://www.scilab.org/ ) - This file is part of Scilab
+ *  Copyright (C) 2012-2012 - OCAMLPRO INRIA - Fabrice LE FESSANT
+ *
+ *  This file must be used under the terms of the CeCILL.
+ *  This source file is licensed as described in the file COPYING, which
+ *  you should have received as part of this distribution.  The terms
+ *  are also available at
+ *  http://www.cecill.info/licences/Licence_CeCILL_V2-en.txt
+ *
+ *)
+
 open ScilabAst
 
-external jit_ocaml_get_double : string -> int -> float = "jit_ocaml_get_double_c"
+let debug = false
 
 let get_uint8 s pos =
   int_of_char (String.unsafe_get s pos), pos+1
@@ -178,216 +190,306 @@ let get_VarDec_Kind s pos =
   in
   kind, pos
 
+let get_TransposeExp_Kind s pos =
+  let code, pos = get_uint8 s pos in
+  let kind =
+    match code with
+    | 1 -> Conjugate
+    | 2 -> NonConjugate
+    | _ -> failwith (Printf.sprintf "get_TransposeExp_Kind : unknown code %d" code)
+  in
+  kind, pos
+
+
+external jit_ocaml_get_double : string -> int -> float =
+    "jit_ocaml_get_double_c"
 let get_double s pos =
   let d = jit_ocaml_get_double s pos in
   let pos = pos + 8 in
   d, pos
 
-let dummy_info = {
-  is_verbose = false;
-  is_break = false;
-  is_breakable = false;
-  is_return = false;
-  is_returnable = false;
-  is_continue = false;
-  is_continuable = false;
-}
-let dummy_loc = {
-  first_line = 0;
-  first_column = 0;
-  last_line = 0;
-  last_column = 0;
-}
-
 let dummyExp = mkexp (SeqExp []) dummy_info dummy_loc
 
 let warning = ref None
 let return_dummyExp = ref false
+
+let indent = ref [""]
+
 let rec get_exp s pos =
   if !return_dummyExp then dummyExp, pos else
-  let code, info, loc, pos = get_ast s pos in
-  match code with
-  | 1 ->
-    let items, pos = get_exps s pos in
-    mkexp (SeqExp items) info loc, pos
-  | 2 ->
-    let stringExp_value, pos = get_wstring s pos in
-    mkexp (ConstExp (StringExp {
-      stringExp_value;
-      stringExp_bigString = ();
-    }
-    )) info loc, pos
-  | 3 ->
-    let commentExp_comment, pos = get_wstring s pos in
-    mkexp (ConstExp (CommentExp {
-      commentExp_comment;
-    }
-    )) info loc, pos
+    let _ = () in
 
-  | 4 ->
-    let intExp_prec, pos = get_IntExp_Prec s pos in
-    let intExp_value, pos = get_uint32_32 s pos in
-    mkexp (ConstExp (IntExp {
-      intExp_value;
-      intExp_prec;
-    })) info loc, pos
+    let old_pos = pos in
+    let code, info, loc, pos = get_ast s pos in
+    if debug then begin
+      let old_indent = List.hd !indent in
+      indent := (Printf.sprintf "%s%d-" old_indent code) :: !indent;
+      Printf.fprintf stderr "%s : %d -> %d\n%!" old_indent old_pos code;
+    end;
+    let exp, pos =
+      match code with
+      | 1 ->
+        let items, pos = get_exps s pos in
+        mkexp (SeqExp items) info loc, pos
+      | 2 ->
+        let stringExp_value, pos = get_wstring s pos in
+        mkexp (ConstExp (StringExp {
+          stringExp_value;
+          stringExp_bigString = ();
+        }
+        )) info loc, pos
+      | 3 ->
+        let commentExp_comment, pos = get_wstring s pos in
+        mkexp (ConstExp (CommentExp {
+          commentExp_comment;
+        }
+        )) info loc, pos
 
-  | 5 ->
-    let floatExp_value, pos = get_double s pos in
-    mkexp (ConstExp (FloatExp {
-      floatExp_value;
-    })) info loc, pos
+      | 4 ->
+        let intExp_prec, pos = get_IntExp_Prec s pos in
+        let intExp_value, pos = get_uint32_32 s pos in
+        mkexp (ConstExp (IntExp {
+          intExp_value;
+          intExp_prec;
+        })) info loc, pos
 
-  | 6 ->
-    let doubleExp_value, pos = get_double s pos in
-    mkexp (ConstExp (DoubleExp {
-      doubleExp_value;
-      doubleExp_bigDouble = ();
-    })) info loc, pos
+      | 5 ->
+        let floatExp_value, pos = get_double s pos in
+        mkexp (ConstExp (FloatExp {
+          floatExp_value;
+        })) info loc, pos
 
-  | 7 ->
-    let boolExp_value, pos = get_uint8 s pos in
-    let boolExp_value = boolExp_value <> 0 in
-    mkexp (ConstExp (BoolExp {
-      boolExp_value;
-      boolExp_bigBool = ();
-    })) info loc, pos
+      | 6 ->
+        let doubleExp_value, pos = get_double s pos in
+        mkexp (ConstExp (DoubleExp {
+          doubleExp_value;
+          doubleExp_bigDouble = ();
+        })) info loc, pos
 
-  | 8 ->
-    mkexp (ConstExp NilExp) info loc, pos
+      | 7 ->
+        let boolExp_value, pos = get_uint8 s pos in
+        let boolExp_value = boolExp_value <> 0 in
+        mkexp (ConstExp (BoolExp {
+          boolExp_value;
+          boolExp_bigBool = ();
+        })) info loc, pos
 
-  | 9 ->
-    let symbol, pos = get_wstring s pos in
-    mkexp (Var {
-      var_location = loc;
-      var_desc = SimpleVar symbol;
-    }) info loc, pos
+      | 8 ->
+        mkexp (ConstExp NilExp) info loc, pos
 
-  | 10 ->
-    mkexp (Var {
-      var_location = loc;
-      var_desc = ColonVar;
-    }) info loc, pos
+      | 9 ->
+        let symbol, pos = get_wstring s pos in
+        mkexp (Var {
+          var_location = loc;
+          var_desc = SimpleVar symbol;
+        }) info loc, pos
 
-  | 11 ->
-    mkexp (Var {
-      var_location = loc;
-      var_desc = DollarVar;
-    }) info loc, pos
+      | 10 ->
+        mkexp (Var {
+          var_location = loc;
+          var_desc = ColonVar;
+        }) info loc, pos
 
-  | 12 ->
-    let vars, pos = get_vars s pos in
-    mkexp (Var { var_desc = ArrayListVar vars;
-                 var_location = loc }) info loc, pos
+      | 11 ->
+        mkexp (Var {
+          var_location = loc;
+          var_desc = DollarVar;
+        }) info loc, pos
 
-  | 13 ->
-    let fieldExp_head, pos = get_exp s pos in
-    let fieldExp_tail, pos = get_exp s pos in
-    mkexp (FieldExp { fieldExp_head; fieldExp_tail }) info loc, pos
+      | 12 ->
+        let vars, pos = get_vars s pos in
+        mkexp (Var { var_desc = ArrayListVar vars;
+                     var_location = loc }) info loc, pos
 
-  | 14 ->
-    let ifExp_kind, pos = get_IfExp_Kind s pos in
-    let has_else, pos = get_uint8 s pos in
-    let ifExp_test, pos = get_exp s pos in
-    let ifExp_then, pos = get_exp s pos in
-    let ifExp_else, pos =
-      if has_else <> 0 then
-        let ifExp_else, pos = get_exp s pos in
-        Some ifExp_else, pos
-      else
-        None, pos
+      | 13 ->
+        let fieldExp_head, pos = get_exp s pos in
+        let fieldExp_tail, pos = get_exp s pos in
+        mkexp (FieldExp { fieldExp_head; fieldExp_tail }) info loc, pos
+
+      | 14 ->
+        let ifExp_kind, pos = get_IfExp_Kind s pos in
+        let has_else, pos = get_uint8 s pos in
+        let ifExp_test, pos = get_exp s pos in
+        let ifExp_then, pos = get_exp s pos in
+        let ifExp_else, pos =
+          if has_else <> 0 then
+            let ifExp_else, pos = get_exp s pos in
+            Some ifExp_else, pos
+          else
+            None, pos
+        in
+        mkexp (ControlExp (IfExp {
+          ifExp_kind; ifExp_test; ifExp_then; ifExp_else
+        })) info loc, pos
+
+      | 15 ->
+        let tryCatchExp_tryme_location, pos = get_location s pos in
+        let tryCatchExp_catchme_location, pos = get_location s pos in
+        let tryCatchExp_tryme, pos = get_exps s pos in
+        let tryCatchExp_catchme, pos = get_exps s pos in
+        mkexp (ControlExp (TryCatchExp {
+          tryCatchExp_tryme_location;
+          tryCatchExp_catchme_location;
+          tryCatchExp_tryme; tryCatchExp_catchme })) info loc, pos
+
+      | 16 ->
+        let whileExp_test, pos = get_exp s pos in
+        let whileExp_body, pos = get_exp s pos in
+        mkexp (ControlExp (WhileExp {
+          whileExp_test; whileExp_body })) info loc, pos
+
+      | 17 ->
+        let forExp_vardec_location, pos = get_location s pos in
+        let forExp_vardec, pos = get_varDec s pos in
+        let forExp_body, pos = get_exp s pos in
+        mkexp (ControlExp (ForExp {
+          forExp_vardec_location;
+          forExp_vardec; forExp_body })) info loc, pos
+
+      | 18 ->
+        mkexp (ControlExp BreakExp) info loc, pos
+
+      | 19 ->
+        mkexp (ControlExp ContinueExp) info loc, pos
+
+      | 20 ->
+        let returnExp_is_global, pos = get_bool s pos in
+        let returnExp_exp, pos =
+          if returnExp_is_global then None, pos else
+            let returnExp_exp, pos = get_exp s pos in
+            Some returnExp_exp, pos
+        in
+        mkexp (ControlExp (ReturnExp {
+          returnExp_exp
+        })) info loc, pos
+
+      | 21 ->
+        let has_default, pos = get_bool s pos in
+        let selectExp_default, pos =
+          if has_default then
+            let default_location, pos = get_location s pos in
+            let default, pos = get_exps s pos in
+            Some (default_location, default), pos
+          else
+            None, pos
+        in
+        let selectExp_selectme, pos = get_exp s pos in
+        let selectExp_cases, pos = get_cases s pos in
+        mkexp (ControlExp (SelectExp {
+          selectExp_default;
+          selectExp_selectme; selectExp_cases })) info loc, pos
+
+      | 23 ->
+        let matrixExp_lines, pos = get_matrixLines s pos in
+        mkexp (MathExp (CellExp { matrixExp_lines })) info loc, pos
+
+      | 24 ->
+        let exps, pos = get_exps s pos in
+        let exps = Array.of_list exps in
+        mkexp (ArrayListExp exps) info loc, pos
+
+      | 25 ->
+        let exps, pos = get_exps s pos in
+        let exps = Array.of_list exps in
+        mkexp (AssignListExp exps) info loc, pos
+
+      | 26 ->
+        let notExp_exp, pos = get_exp s pos in
+        mkexp (MathExp (NotExp { notExp_exp })) info loc, pos
+
+      | 27 ->
+        let transposeExp_conjugate, pos = get_TransposeExp_Kind s pos in
+        let transposeExp_exp, pos = get_exp s pos in
+        mkexp (MathExp (TransposeExp {
+          transposeExp_exp; transposeExp_conjugate })) info loc, pos
+      | 28 ->
+        let vardec, pos = get_varDec s pos in
+        mkexp (Dec (VarDec vardec)) info loc, pos
+
+      | 29 ->
+        let functionDec_symbol, pos = get_Symbol s pos in
+        let args_loc, pos = get_location s pos in
+        let returns_loc, pos = get_location s pos in
+        let functionDec_body, pos = get_exp s pos in
+        let args, pos = get_vars s pos in
+        let returns, pos = get_vars s pos in
+        let functionDec_args = {
+          arrayListVar_location = args_loc;
+          arrayListVar_vars = args;
+        } in
+        let functionDec_returns = {
+          arrayListVar_location = returns_loc;
+          arrayListVar_vars = returns;
+        } in
+        mkexp (Dec (FunctionDec {
+          functionDec_symbol; functionDec_location = loc;
+          functionDec_body; functionDec_args; functionDec_returns;
+        })) info loc, pos
+
+      | 30 ->
+        let listExp_start, pos = get_exp s pos in
+        let listExp_step, pos = get_exp s pos in
+        let listExp_end, pos = get_exp s pos in
+        mkexp (ListExp {
+          listExp_start; listExp_step; listExp_end }) info loc, pos
+
+      | 31 ->
+        let assignExp_left_exp, pos = get_exp s pos in
+        let assignExp_right_exp, pos = get_exp s pos in
+        mkexp (AssignExp {
+          assignExp_left_exp; assignExp_right_exp
+        }) info loc, pos
+
+      | 32 ->
+        let opExp_kind, pos = get_OpExp_Kind s pos in
+        let opExp_oper, pos = get_OpExp_Oper s pos in
+        let opExp_left, pos = get_exp s pos in
+        let opExp_right, pos =get_exp s pos in
+        mkexp (MathExp (OpExp (opExp_oper,
+                               {
+                                 opExp_right; opExp_left; opExp_kind
+                               }))) info loc, pos
+
+      | 33 ->
+        let opExp_kind, pos = get_OpExp_Kind s pos in
+        let opExp_oper, pos = get_LogicalOpExp_Oper s pos in
+        let opExp_left, pos = get_exp s pos in
+        let opExp_right, pos =get_exp s pos in
+        mkexp (MathExp (LogicalOpExp (opExp_oper,
+                                      {
+                                        opExp_right; opExp_left; opExp_kind
+                                      }))) info loc, pos
+
+      | 34 ->
+        let matrixExp_lines, pos = get_matrixLines s pos in
+        mkexp (MathExp (MatrixExp { matrixExp_lines })) info loc, pos
+
+      | 35 ->
+        let callExp_name, pos = get_exp s pos in
+        let callExp_args, pos = get_exps s pos in
+        let callExp_args = Array.of_list callExp_args in
+        mkexp (CallExp {
+          callExp_name; callExp_args
+        }) info loc, pos
+
+      | 37 ->
+        let callExp_name, pos = get_exp s pos in
+        let callExp_args, pos = get_exps s pos in
+        let callExp_args = Array.of_list callExp_args in
+        mkexp (CellCallExp {
+          callExp_name; callExp_args
+        }) info loc, pos
+
+      | _ ->
+        warning := Some (
+          Printf.sprintf  "ast_of_buffer: code %d unknown" code);
+        return_dummyExp := true;
+        dummyExp, pos
     in
-    mkexp (ControlExp (IfExp {
-      ifExp_kind; ifExp_test; ifExp_then; ifExp_else
-    })) info loc, pos
-
-  | 15 ->
-    let tryCatchExp_tryme, pos = get_exps s pos in
-    let tryCatchExp_catchme, pos = get_exps s pos in
-    mkexp (ControlExp (TryCatchExp {
-      tryCatchExp_tryme; tryCatchExp_catchme })) info loc, pos
-
-  | 16 ->
-    let whileExp_test, pos = get_exp s pos in
-    let whileExp_body, pos = get_exp s pos in
-    mkexp (ControlExp (WhileExp {
-      whileExp_test; whileExp_body })) info loc, pos
-
-  | 17 ->
-    let forExp_vardec_location, pos = get_location s pos in
-    let forExp_vardec, pos = get_varDec s pos in
-    let forExp_body, pos = get_exp s pos in
-    mkexp (ControlExp (ForExp {
-      forExp_vardec_location;
-      forExp_vardec; forExp_body })) info loc, pos
-
-  | 29 ->
-    let functionDec_symbol, pos = get_wstring s pos in
-    let functionDec_body, pos = get_exp s pos in
-    let args_loc, pos = get_location s pos in
-    let args, pos = get_vars s pos in
-    let functionDec_args = {
-      arrayListVar_location = args_loc;
-      arrayListVar_vars = args;
-    } in
-    let returns_loc, pos = get_location s pos in
-    let returns, pos = get_vars s pos in
-    let functionDec_returns = {
-      arrayListVar_location = returns_loc;
-      arrayListVar_vars = returns;
-    } in
-    mkexp (Dec (FunctionDec {
-      functionDec_symbol; functionDec_location = loc;
-      functionDec_body; functionDec_args; functionDec_returns;
-    })) info loc, pos
-
-  | 31 ->
-    let assignExp_left_exp, pos = get_exp s pos in
-    let assignExp_right_exp, pos = get_exp s pos in
-    mkexp (AssignExp {
-      assignExp_left_exp; assignExp_right_exp
-    }) info loc, pos
-
-  | 32 ->
-    let opExp_kind, pos = get_OpExp_Kind s pos in
-    let opExp_oper, pos = get_OpExp_Oper s pos in
-    let opExp_left, pos = get_exp s pos in
-    let opExp_right, pos =get_exp s pos in
-    let opExp_right = Some opExp_right in (* TODO, why an option ? *)
-    mkexp (MathExp (OpExp (opExp_oper,
-      {
-        opExp_right; opExp_left; opExp_kind
-      }))) info loc, pos
-
-  | 33 ->
-    let opExp_kind, pos = get_OpExp_Kind s pos in
-    let opExp_oper, pos = get_LogicalOpExp_Oper s pos in
-    let opExp_left, pos = get_exp s pos in
-    let opExp_right, pos =get_exp s pos in
-    let opExp_right = Some opExp_right in (* TODO, why an option ? *)
-    mkexp (MathExp (LogicalOpExp (opExp_oper,
-      {
-        opExp_right; opExp_left; opExp_kind
-      }))) info loc, pos
-
-  | 34 ->
-    let matrixExp_lines, pos = get_matrixLines s pos in
-    mkexp (MathExp (MatrixExp { matrixExp_lines })) info loc, pos
-
-  | 35 ->
-    let callExp_name, pos = get_exp s pos in
-    let callExp_args, pos = get_exps s pos in
-    let callExp_args = Array.of_list callExp_args in
-    mkexp (CallExp {
-      callExp_name; callExp_args
-    }) info loc, pos
-
-  | _ ->
-    warning := Some (
-      Printf.sprintf  "ast_of_buffer: code %d unknown" code);
-    return_dummyExp := true;
-    dummyExp, pos
-
+    if debug then begin
+      indent := List.tl !indent;
+    end;
+    exp, pos
 
 and get_varDec s pos =
   let varDec_name, pos = get_Symbol s pos in
@@ -397,30 +499,47 @@ and get_varDec s pos =
 
 and get_exps s pos =
   if !return_dummyExp then [], pos else
-  let nitems, pos = get_uint32 s pos in
-  let rec iter nitems s pos ritems =
-    if nitems > 0 then
-      let item, pos = get_exp s pos in
-      iter (nitems-1) s pos (item :: ritems)
-    else (List.rev ritems, pos)
-  in
-  iter nitems s pos []
+    let nitems, pos = get_uint32 s pos in
+    let rec iter nitems s pos ritems =
+      if nitems > 0 then
+        let item, pos = get_exp s pos in
+        iter (nitems-1) s pos (item :: ritems)
+      else (List.rev ritems, pos)
+    in
+    iter nitems s pos []
 
 and get_matrixLines s pos =
   if !return_dummyExp then [||], pos else
-  let nitems, pos = get_uint32 s pos in
-  let rec iter nitems s pos ritems =
-    if nitems > 0 then
-      let loc, pos = get_location s pos in
-      let exps, pos = get_exps s pos in
-      let item = {
-        matrixLineExp_location = loc;
-        matrixLineExp_columns = Array.of_list exps;
-      } in
-      iter (nitems-1) s pos (item :: ritems)
-    else (Array.of_list (List.rev ritems), pos)
-  in
-  iter nitems s pos []
+    let nitems, pos = get_uint32 s pos in
+    let rec iter nitems s pos ritems =
+      if nitems > 0 then
+        let loc, pos = get_location s pos in
+        let exps, pos = get_exps s pos in
+        let item = {
+          matrixLineExp_location = loc;
+          matrixLineExp_columns = Array.of_list exps;
+        } in
+        iter (nitems-1) s pos (item :: ritems)
+      else (Array.of_list (List.rev ritems), pos)
+    in
+    iter nitems s pos []
+
+and get_cases s pos =
+  if !return_dummyExp then [||], pos else
+    let nitems, pos = get_uint32 s pos in
+    let rec iter nitems s pos ritems =
+      if nitems > 0 then
+        let caseExp_location, pos = get_location s pos in
+        let caseExp_body_location, pos = get_location s pos in
+        let caseExp_test, pos = get_exp s pos in
+        let caseExp_body, pos = get_exps s pos in
+        let case = {
+          caseExp_location; caseExp_body_location;
+          caseExp_body; caseExp_test } in
+        iter (nitems-1) s pos (case :: ritems)
+      else (Array.of_list (List.rev ritems), pos)
+    in
+    iter nitems s pos []
 
 and get_vars s pos =
   let exps, pos = get_exps s pos in
@@ -433,17 +552,52 @@ and get_vars s pos =
   in
   vars, pos
 
-let ast_of_buffer s =
+let previous_one = ref None
+
+let copy_string s =
+  let pos = 0 in
+  let buflen, pos = get_uint32 s pos in
+  let copy = String.create buflen in
+  String.unsafe_blit s 0 copy 0 buflen;
+  copy
+
+let diff_strings s1 s2 =
+  if s1 <> s2 then
+    let len1 = String.length s1 in
+    let len2 = String.length s2 in
+    Printf.fprintf stderr "len1 = %d <> len2 = %d\n%!" len1 len2;
+    for i = 4 to (min len1 len2)-1 do
+      if s1.[i] <> s2.[i] then begin
+        Printf.fprintf stderr "diff at %d\n%!" i;
+      end
+    done
+
+let ast_of_string s =
   return_dummyExp := false;
   warning := None;
   let pos = 0 in
   let buflen, pos = get_uint32 s pos in
-  Printf.fprintf stderr "buflen : %d\n%!" buflen;
+  if debug then
+    Printf.fprintf stderr "buflen : %d\n%!" buflen;
   let ast, pos = get_exp s pos in
   begin
     match !warning with
       None -> ()
     | Some s ->
       Printf.fprintf stderr "Warning: %s\n%!" s
+  end;
+
+  if debug then begin
+    let s1 = copy_string s in
+    begin match !previous_one with
+      None -> ()
+    | Some (previous_ast, s2) ->
+      if previous_ast = ast then
+        Printf.fprintf stderr "IDEMPOTENT!!\n%!"
+      else
+        Printf.fprintf stderr "NOT IDEMPOTENT!!\n%!";
+      diff_strings s1 s2;
+    end;
+    previous_one := Some (ast, s1);
   end;
   ast

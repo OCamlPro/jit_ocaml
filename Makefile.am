@@ -83,9 +83,11 @@ OCAML_AST_MLIS = \
 
 OCAML_SCILAB_MLS = \
 	src/ocaml/scilabString2Ast.ml \
+	src/ocaml/scilabAst2String.ml \
 	src/ocaml/scilabCallbacks.ml
 OCAML_SCILAB_MLIS = \
 	src/ocaml/scilabString2Ast.mli \
+	src/ocaml/scilabAst2String.mli \
 	src/ocaml/scilabCallbacks.mli
 
 

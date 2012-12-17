@@ -1,3 +1,15 @@
+(*
+ *  Scilab ( http://www.scilab.org/ ) - This file is part of Scilab
+ *  Copyright (C) 2012-2012 - OCAMLPRO INRIA - Fabrice LE FESSANT
+ *
+ *  This file must be used under the terms of the CeCILL.
+ *  This source file is licensed as described in the file COPYING, which
+ *  you should have received as part of this distribution.  The terms
+ *  are also available at
+ *  http://www.cecill.info/licences/Licence_CeCILL_V2-en.txt
+ *
+ *)
+
 open ScilabAst
 
 let string_of_opExp_Kind  = function
@@ -94,15 +106,10 @@ let rec print_exp buf indent ast =
         Printf.bprintf buf "%sNilExp\n" indent
     end
 
-  | CallExp { callExp_name; callExp_args } ->
-    Printf.bprintf buf "%sCallExp\n" indent;
-    Printf.bprintf buf "%s  name:\n" indent;
-    let indent2 = indent ^ "    " in
-    print_exp buf indent2 callExp_name;
-    Printf.bprintf buf "%s  args:\n" indent;
-    Array.iter (fun exp ->
-      print_exp buf indent2 exp;
-    ) callExp_args
+  | CallExp exp ->
+    print_CallExp buf indent "CallExp" exp
+  | CellCallExp exp ->
+    print_CallExp buf indent "CellCallExp" exp
 
   | AssignExp { assignExp_left_exp; assignExp_right_exp } ->
     Printf.bprintf buf "%sAssignExp\n" indent;
@@ -149,31 +156,39 @@ let rec print_exp buf indent ast =
           print_exp buf indent2 ifExp_else
         end
 
-      | ReturnExp { returnExp_exp; returnExp_is_global } ->
-        Printf.bprintf buf "%sReturnExp %s\n" indent
-          (if returnExp_is_global then "(global)" else "");
-        let indent2 = indent ^ "  " in
-        print_exp buf indent2 returnExp_exp
+      | ReturnExp { returnExp_exp } ->
+        Printf.bprintf buf "%sReturnExp\n" indent;
+        begin match returnExp_exp with
+          None -> ()
+        | Some returnExp_exp ->
+          let indent2 = indent ^ "  " in
+          print_exp buf indent2 returnExp_exp
+        end
 
       | SelectExp { selectExp_selectme;
-                    selectExp_cases; selectExp_default } ->
+                    selectExp_cases;
+                    selectExp_default } ->
         Printf.bprintf buf "%sSelectExp\n" indent;
         let indent2 = indent ^ "    " in
         let indent3 = indent2 ^ "  " in
         Printf.bprintf buf "%s  selectme:\n" indent;
         print_exp buf indent2 selectExp_selectme;
         Printf.bprintf buf "%s  cases:\n" indent;
-        List.iter (fun { caseExp_test; caseExp_body } ->
+        Array.iter (fun { caseExp_test; caseExp_body } ->
           Printf.bprintf buf "%s    test:\n" indent;
           print_exp buf indent3 caseExp_test;
           Printf.bprintf buf "%s    body:\n" indent;
           List.iter (fun exp ->
             print_exp buf indent3 exp) caseExp_body
         ) selectExp_cases;
-        Printf.bprintf buf "%s  default:\n" indent;
-        List.iter (fun exp ->
-          print_exp buf indent2 exp;
-        ) selectExp_default
+        begin match selectExp_default with
+          None -> ()
+        | Some (_, seqexp) ->
+          Printf.bprintf buf "%s  default:\n" indent;
+          List.iter (fun exp ->
+            print_exp buf indent2 exp;
+          ) seqexp
+        end
 
       | TryCatchExp { tryCatchExp_tryme; tryCatchExp_catchme } ->
         Printf.bprintf buf "%sTryCatchExp\n" indent;
@@ -262,22 +277,20 @@ let rec print_exp buf indent ast =
   | MathExp mathExp ->
     begin
       match mathExp with
-      | MatrixExp { matrixExp_lines } ->
-        Printf.bprintf buf "%sMatrixExp\n" indent;
-        let indent2 = indent ^ "    " in
-        Array.iter (fun { matrixLineExp_columns } ->
-          Printf.bprintf buf "%s  line:\n" indent;
-          Array.iter (fun exp ->
-            print_exp buf indent2 exp
-          ) matrixLineExp_columns
-        ) matrixExp_lines
 
+      | MatrixExp exp ->
+        print_MatrixExp buf indent "MatrixExp" exp
+      | CellExp exp ->
+        print_MatrixExp buf indent "CellExp" exp
+
+(*
       | MatrixLineExp exps ->
         Printf.bprintf buf "%sMatrixLineExp\n" indent;
         let indent2 = indent ^ "  " in
         Array.iter (fun exp ->
           print_exp buf indent2 exp;
         ) exps
+*)
 
       | NotExp { notExp_exp } ->
         Printf.bprintf buf "%sNotExp\n" indent;
@@ -307,11 +320,8 @@ and print_opExp buf indent name opExp oper =
   let indent2 = indent ^ "    " in
   Printf.bprintf buf "%s  left:\n" indent;
   print_exp buf indent2 opExp.opExp_left;
-  match opExp.opExp_right with
-    None -> ()
-  | Some opExp_right ->
-    Printf.bprintf buf "%s  right:\n" indent;
-    print_exp buf indent2 opExp_right
+  Printf.bprintf buf "%s  right:\n" indent;
+  print_exp buf indent2 opExp.opExp_right
 
 and print_vars buf indent vars =
   Array.iter (fun var -> print_var buf indent var) vars
@@ -340,6 +350,28 @@ and print_var buf indent { var_desc } =
     Printf.bprintf buf "%sArrayListVar\n" indent;
     let indent2 = indent ^ "  " in
     print_vars buf indent2 vars
+
+and print_MatrixExp buf indent msg { matrixExp_lines } =
+        Printf.bprintf buf "%s%s\n" indent msg;
+        let indent2 = indent ^ "    " in
+        Array.iter (fun { matrixLineExp_columns } ->
+          Printf.bprintf buf "%s  line:\n" indent;
+          Array.iter (fun exp ->
+            print_exp buf indent2 exp
+          ) matrixLineExp_columns
+        ) matrixExp_lines
+
+
+and print_CallExp buf indent msg { callExp_name; callExp_args } =
+    Printf.bprintf buf "%s%s\n" indent msg;
+    Printf.bprintf buf "%s  name:\n" indent;
+    let indent2 = indent ^ "    " in
+    print_exp buf indent2 callExp_name;
+    Printf.bprintf buf "%s  args:\n" indent;
+    Array.iter (fun exp ->
+      print_exp buf indent2 exp;
+    ) callExp_args
+
 
 let to_string ast =
   let b = Buffer.create 1024 in
