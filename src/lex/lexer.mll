@@ -8,6 +8,8 @@
       pos_lnum = lexbuf.lex_curr_p.pos_lnum + 1;
       pos_bol =  lexbuf.lex_curr_p.pos_cnum;
     }
+  
+  let str_cmt = ref ""
 
 }
 
@@ -43,27 +45,32 @@ let id   = id1 id2*
 let booltrue  = "%t" | "%T"
 let boolfalse = "%f" | "%F" 
 
-let lbrack    = "["
-let rbrack    = "]"
+let lbrack = "["
+let rbrack = "]"
 
-let lparen    = "("
-let rparen    = ")"
+let lparen = "("
+let rparen = ")"
 
-let lbrace    = "{"
-let rbrace    = "}"
+let lbrace = "{"
+let rbrace = "}"
 
-let dollar    = "$"
+let dollar = "$"
 
 let semicolon = ";"
 let comma     = ","
 let colon     = ":"
 
-let assign    = "=" 
+let startlinecomment  = "//"
+let startblockcomment = "/*"
+let endblockcomment   = "*/"
+
+let assign = "=" 
     
 
 rule token = parse
   | blank                        { token lexbuf }
   | newline                      { Printf.printf "\n"; newline lexbuf; EOL}
+  | startlinecomment             { str_cmt := "";comment lexbuf }
   | "if"                         { IF }
   | "then"                       { THEN }
   | "else"                       { ELSE }
@@ -92,6 +99,10 @@ rule token = parse
   | eof                          { EOF }
   | _ as c                       { Printf.printf "Lexing error : Unknow character \'%c\'" c;exit 1}
       
+and comment = parse
+  | newline                      { Printf.printf "\n"; newline lexbuf; COMMENT !str_cmt}
+  | eof                          { COMMENT !str_cmt}
+  | _ as c                       { str_cmt := !str_cmt^(String.make 1 c); comment lexbuf }
 
 (* and matrix = parse *)
 (*   | spaces+ *)

@@ -27,39 +27,19 @@ let run_tests dirname =
       run_test file
   ) files
 
-let run_good_tests () =
-  let dirname = "../../test/good/" in
-  run_tests dirname 
-
-let run_my_tests () =
-  let dirname = "test/" in
-  run_tests dirname
-
 let _ =
   Arg.parse args (fun s -> file := s) usage;
   if !test_flag 
   then 
-    begin 
-      run_my_tests (); 
-      run_good_tests ()   
+    begin
+      let dir_tests = 
+        ["test/";
+         (* "/home/michael/dev_sci/richelieu/code_samples/declarations/"; *)
+         (* "../../test/good/"; *)] in
+      List.iter (run_tests) dir_tests
     end
   else run_test !file
-(* print_program stdout p; *)
-(* fprintf stdout "\n\n"; *)
-(* fprintf stdout "Type du programme : %s.\n" (Typage.type_program p); *)
-(* fprintf stdout "Valeur calculée : %a.\n" print_value (Eval.eval_program p) *)
-    
-(* with *)
-(*   | LexingError e -> print_lexing_error stderr e *)
-(*   | Parser.Error -> print_parsing_error stderr lexbuf *)
-(*   | TypingError e -> print_typing_error stderr e *)
-(*   | EvalError e -> print_eval_error stderr e *)
-
-
-
-
-
-
+ 
 
 
 

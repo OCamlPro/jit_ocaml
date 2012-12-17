@@ -25,11 +25,12 @@
 %token LBRACK RBRACK LPAREN RPAREN LBRACE RBRACE DOLLAR SPACES
 %token COMMA EOL DOLLAR SEMI IF THEN ELSE ELSEIF END WHILE DO 
 %token COLON ASSIGN ID FOR
-%token COMMENT BOOLTRUE BOOLFALSE
+%token BOOLTRUE BOOLFALSE
 %token<float> VARINT
 %token<float> VARFLOAT
 %token<float> NUM
 %token<string> ID
+%token<string> COMMENT
 %token EOF
 
 %nonassoc TOPLEVEL
@@ -73,6 +74,16 @@ expressions :
                                                   let off_end = Parsing.rhs_end_pos 1 in
                                                   let loc = create_loc off_st off_end in
                                                   Exp (create_exp loc seqexp) }
+| expression COMMENT                           { let commentexp = CommentExp { commentExp_comment = $2 } in
+                                                 let cmt_st = Parsing.rhs_start_pos 2 in
+                                                 let cmt_end = Parsing.rhs_end_pos 2 in
+                                                 let cmt_loc = create_loc cmt_st cmt_end in
+                                                 let cmt_exp = create_exp cmt_loc (ConstExp commentexp) in
+                                                 let seqexp = SeqExp ($1::[cmt_exp]) in
+                                                 let off_st = Parsing.rhs_start_pos 1 in
+                                                 let off_end = Parsing.rhs_end_pos 2 in
+                                                 let loc = create_loc off_st off_end in
+                                                 Exp (create_exp loc seqexp) }
 
 expression :
 | functionCall                                  { $1 }
@@ -81,6 +92,12 @@ expression :
 | forControl                                    { $1 }
 | whileControl                                  { $1 }
 | variable                                      { $1 }
+| COMMENT                                       { let commentexp = CommentExp { commentExp_comment = $1 } in
+                                                  let off_st = Parsing.rhs_start_pos 1 in
+                                                  let off_end = Parsing.rhs_end_pos 1 in
+                                                  let loc = create_loc off_st off_end in
+                                                  create_exp loc (ConstExp commentexp)
+                                                }
 
 /* FUNCTIONCALL */
 functionCall :
